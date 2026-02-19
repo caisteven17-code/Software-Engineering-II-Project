@@ -238,6 +238,8 @@
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
   min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
   background: #f3f8f9;
 }
 
@@ -364,6 +366,9 @@
   display: grid;
   gap: 16px;
   min-width: 0;
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .home-page {
@@ -1165,9 +1170,11 @@
 }
 
 .patient-details-page {
-  max-height: calc(100vh - 140px);
-  overflow-y: auto;
-  padding: 0 10px 20px;
+  min-height: calc(100vh - 108px);
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  padding: 0 0 12px 8px;
 }
 
 .patient-record-tabs {
@@ -1406,6 +1413,9 @@
 
 .details-footer {
   justify-content: flex-start;
+  margin-top: 20px;
+  margin-bottom: 0;
+  padding-bottom: 28px;
 }
 
 .modal-backdrop {
@@ -1909,9 +1919,11 @@
 
 /* Patient details cleanup */
 .patient-details-page {
-  max-height: calc(100vh - 140px);
-  overflow-y: auto;
-  padding: 0 8px 20px;
+  min-height: calc(100vh - 108px);
+  height: auto;
+  max-height: none;
+  overflow: visible;
+  padding: 0 0 12px 8px;
 }
 
 .patient-record-tabs {
@@ -1920,7 +1932,7 @@
 }
 
 .pr-banner {
-  background: #0c6284;
+  background: #0b6789;
   border-radius: 8px;
   color: #fff;
   display: grid;
@@ -1952,7 +1964,7 @@
 
 .pr-name small,
 .pr-id small {
-  color: #a5d8e7;
+  color: #b7deeb;
   font-size: 10px;
 }
 
@@ -1983,6 +1995,102 @@
   display: grid;
   gap: 12px;
   margin-top: 12px;
+}
+
+.pr-dental-prototype {
+  background: #d3dde2;
+  border: 2px solid #0f86ac;
+  padding: 14px;
+  width: min(1120px, 100%);
+  margin: 12px auto 0;
+}
+
+.pr-dental-prototype .pr-split-header h4 {
+  background: #31a5c8;
+  color: #ffffff;
+}
+
+.pr-dental-prototype .pr-screen-card {
+  border: 1px solid #7f8f99;
+  background: #f5f7f9;
+}
+
+.pr-dental-prototype .pr-option-grid label {
+  color: #5d6d77;
+}
+
+.pr-dental-prototype .pr-dentist-tag {
+  border: 1px solid #8f9ea8;
+  background: #f5f7f9;
+  color: #5a6973;
+}
+
+.pr-dental-prototype .pr-dentist-tag strong {
+  color: #00a9dd;
+}
+
+.pr-dental-prototype .pr-dentist-name {
+  color: #4f4f4f;
+}
+
+.pr-dental-prototype .pr-dental-history-wrap {
+  border: 1px solid #8f9ea8;
+  background: #f5f7f9;
+}
+
+.pr-dental-prototype .pr-dental-history-wrap h3 {
+  color: #0c80a7;
+}
+
+.pr-dental-prototype .pr-notes-grid label {
+  background: #cfeef7;
+  color: #0c93c1;
+}
+
+.pr-dental-prototype .pr-notes-grid textarea {
+  background: #ffffff;
+  border: 1px solid #d8e1e6;
+  color: #8a979f;
+}
+
+.pr-dental-prototype .pr-meta-row span {
+  background: #f8fafb;
+  border: 1px solid #8f9ea8;
+}
+
+.pr-dental-shell {
+  margin-top: 12px;
+  padding: 0;
+  border: 2px solid #0a6e93;
+  border-radius: 8px;
+  background: #d9e1e5;
+  overflow: hidden;
+}
+
+.pr-banner.pr-banner-in-card {
+  border-radius: 0;
+}
+
+.pr-dental-shell-body {
+  display: grid;
+  gap: 12px;
+  padding: 12px 14px 18px;
+}
+
+.pr-dental-shell-body .actions-row {
+  margin: 0;
+}
+
+.pr-dental-shell-body .pr-dental-prototype {
+  width: 100%;
+  margin: 0;
+  border-width: 1px;
+}
+
+.pr-dental-shell .details-footer {
+  margin-top: 8px;
+  margin-bottom: 0;
+  padding-bottom: 4px;
 }
 
 .pr-card {
@@ -2023,6 +2131,40 @@
   color: #4f6370;
 }
 
+.pr-detail-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pr-detail-item {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid #c8d6df;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.pr-detail-item-wide {
+  grid-column: span 2;
+}
+
+.pr-detail-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: #2d8cab;
+}
+
+.pr-detail-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: #3f505c;
+  line-height: 1.35;
+}
+
 .mini-edit-btn {
   border: none;
   width: 24px;
@@ -2055,23 +2197,66 @@
 }
 
 .pr-split-header h4 {
-  margin: 0 0 8px;
-  padding: 8px 10px;
-  border-radius: 6px;
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 6px 6px 0 0;
   background: #35a4c4;
   color: #fff;
-  font-size: 14px;
+  font-size: 22px;
+  text-align: center;
+}
+
+.pr-screen-card {
+  border: 1px solid #667a86;
+  border-radius: 10px;
+  background: #f2f5f7;
+  overflow: hidden;
 }
 
 .pr-option-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 18px 30px;
+  padding: 22px 26px 28px;
 }
 
 .pr-dentist-tag {
   margin: 12px 0 0;
-  font-size: 12px;
+  border: 1px solid #a1b5c3;
+  background: #eff5f7;
+  border-radius: 6px;
+  padding: 10px 12px;
+  width: min(520px, calc(50% - 6px));
+  font-size: 13px;
+  color: #516573;
+}
+
+.pr-dentist-tag strong {
+  color: #00a8dd;
+}
+
+.pr-dentist-name {
+  color: #4c4c4c;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pr-dental-history-wrap {
+  border: 1px solid #a1b5c3;
+  border-radius: 6px;
+  background: #eff5f7;
+  padding: 0 0 10px;
+}
+
+.pr-dental-history-wrap h3 {
+  margin: 0;
+  padding: 10px 12px;
+  color: #0d789e;
+  font-size: 36px;
+}
+
+.pr-dental-history-wrap .pr-dental-chart {
+  margin: 0 10px;
 }
 
 .pr-image-drop {
@@ -2137,22 +2322,28 @@
   margin-top: 12px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 16px;
 }
 
 .pr-notes-grid label {
   display: grid;
   gap: 8px;
-  font-size: 13px;
-  color: #2e4f61;
+  font-size: 12px;
+  color: #0e779d;
+  font-weight: 700;
+  border-radius: 6px 6px 0 0;
+  overflow: hidden;
+  background: #d4ecf3;
 }
 
 .pr-notes-grid textarea {
   border: 1px solid #c3d1db;
-  border-radius: 6px;
+  border-radius: 0;
   padding: 10px;
   resize: vertical;
-  min-height: 120px;
+  min-height: 190px;
+  color: #7a8c96;
+  background: #fff;
 }
 
 .pr-meta-row {
@@ -2208,6 +2399,9 @@
 
 .details-footer {
   justify-content: flex-start;
+  margin-top: 20px;
+  margin-bottom: 0;
+  padding-bottom: 28px;
 }
 
 .pr-modal {
@@ -2353,17 +2547,21 @@
   position: absolute;
   top: 0;
   transform: translateX(-50%);
-  width: clamp(28px, 2.9vw, 36px);
+  width: clamp(34px, 3.8vw, 48px);
 }
 
 .pr-drop-row select {
   width: 100%;
   height: 44px;
-  padding: 0 2px;
+  padding: 0 1px;
   border: 1px solid #8f9eaa;
   border-radius: 2px;
   background: #fff;
-  font-size: 14px;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-align-last: center;
   line-height: 1;
 }
 
@@ -2394,12 +2592,169 @@
   overflow-y: auto;
 }
 
+.pr-dental-record-modal {
+  background: #d3dde2;
+}
+
+.pr-dental-record-modal .pr-modal-section-title {
+  margin: 8px 0 10px;
+  font-size: 23px;
+  letter-spacing: 0.3px;
+}
+
+.pr-dental-check-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.pr-dental-check-card {
+  border: 1px solid #95a7b2;
+  border-radius: 4px;
+  background: #f5f7f8;
+  overflow: hidden;
+}
+
+.pr-dental-check-card h4 {
+  margin: 0;
+  background: #31a5c8;
+  color: #fff;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 8px;
+}
+
+.pr-dental-check-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 14px;
+  padding: 14px 12px 12px;
+}
+
+.pr-dental-check-options label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #5a6b75;
+  font-size: 11px;
+}
+
+.pr-dental-modal-notes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.pr-dental-modal-notes label {
+  display: grid;
+  gap: 0;
+  border-radius: 4px 4px 0 0;
+  overflow: hidden;
+  background: #cfeef7;
+  color: #0d92be;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 10px 0;
+}
+
+.pr-dental-modal-notes textarea {
+  margin-top: 7px;
+  min-height: 160px;
+  border: 1px solid #d4dde2;
+  background: #fff;
+  color: #7a8b95;
+  border-radius: 0;
+  resize: vertical;
+  padding: 8px 10px;
+}
+
+.pr-dental-modal-dentist {
+  margin-top: 12px;
+}
+
+.pr-dental-modal-dentist label {
+  display: grid;
+  gap: 4px;
+  width: min(230px, 100%);
+  font-size: 12px;
+  font-weight: 700;
+  color: #0d92be;
+}
+
+.pr-dental-modal-dentist select {
+  border: 1px solid #c7d4dc;
+  border-radius: 4px;
+  padding: 6px 8px;
+  background: #f8fbfd;
+  color: #4b5f6d;
+}
+
+.pr-dental-record-modal .modal-actions {
+  margin-top: 18px;
+}
+
+.pr-dental-record-modal .danger-btn,
+.pr-dental-record-modal .success-btn {
+  min-width: 72px;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 11px;
+}
+
+/* Shared polish for Dental Prescriptions / Dental Notes blocks */
+.pr-notes-grid label,
+.pr-dental-modal-notes label {
+  border: 1px solid #a9d3e2;
+  border-radius: 8px;
+  background: #cfeaf4;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+  padding: 10px 10px 8px;
+  gap: 8px;
+}
+
+.pr-notes-grid textarea,
+.pr-dental-modal-notes textarea {
+  margin-top: 0;
+  border: 1px solid #c5d5df;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #5e6d77;
+  background: #fff;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.pr-notes-grid textarea::placeholder,
+.pr-dental-modal-notes textarea::placeholder {
+  color: #8b99a2;
+}
+
+.pr-notes-grid textarea:focus,
+.pr-dental-modal-notes textarea:focus {
+  outline: none;
+  border-color: #67b8d0;
+  box-shadow: 0 0 0 2px rgba(103, 184, 208, 0.22), inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
 @media (max-width: 1200px) {
   .pr-grid {
     grid-template-columns: 1fr;
   }
 
   .pr-split-header {
+    grid-template-columns: 1fr;
+  }
+
+  .pr-dentist-tag {
+    width: 100%;
+  }
+
+  .pr-dental-check-grid,
+  .pr-dental-modal-notes {
     grid-template-columns: 1fr;
   }
 
@@ -2412,7 +2767,7 @@
   }
 
   .pr-drop-slot {
-    width: clamp(24px, 5.4vw, 32px);
+    width: clamp(30px, 6vw, 42px);
   }
 
   .pr-modal-head h2 {
@@ -2447,12 +2802,20 @@
   }
 
   .pr-drop-slot {
-    width: clamp(22px, 7.4vw, 28px);
+    width: clamp(28px, 8vw, 38px);
   }
 
   .pr-notes-grid,
   .pr-meta-row {
     grid-template-columns: 1fr;
+  }
+
+  .pr-detail-list {
+    grid-template-columns: 1fr;
+  }
+
+  .pr-detail-item-wide {
+    grid-column: span 1;
   }
 
   .service-list-head,

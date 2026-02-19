@@ -74,17 +74,40 @@ const DENTAL_CHART_IMAGES = [
   { src: dentalChart1, alt: 'Dental chart 1' },
   { src: dentalChart2, alt: 'Dental chart 2' },
 ]
+const PERIODONTAL = ['Gingivitis', 'Moderate Periodontitis', 'Early Periodontitis', 'Advanced Periodontitis']
+const OCCLUSION = ['Class I molar', 'Overbite', 'Overjet', 'Midline Deviation']
+const DENTISTS = ['Dr. Jowela Elaine Roxas', 'Dr. Adrian San Nicolas', 'Dr. Keith San Miguel']
 const TOOTH_X_POSITIONS_BY_CHART = {
   chart1: [3.3, 10.7, 18.1, 24.0, 28.7, 36.1, 40.7, 45.5, 54.1, 59.1, 64.1, 71.5, 77.1, 82.8, 91.2, 97.2],
   chart2: [4.0, 11.9, 19.5, 25.9, 30.7, 38.1, 42.9, 47.7, 52.2, 57.1, 62.3, 68.3, 73.3, 80.9, 89.6, 96.4],
 }
+const createToothMap = () => Object.fromEntries(
+  Array.from({ length: 32 }, (_, i) => i + 1).flatMap((tooth) => (
+    [[`top-${tooth}`, '?'], [`bottom-${tooth}`, '?']]
+  )),
+)
+const DEFAULT_DENTAL_RECORD = {
+  toothMap: createToothMap(),
+  periodontal: Object.fromEntries(PERIODONTAL.map((x) => [x, false])),
+  occlusion: Object.fromEntries(OCCLUSION.map((x) => [x, false])),
+  prescriptions: '',
+  notes: '',
+  dentist: DENTISTS[0],
+}
+const cloneDentalRecord = (record) => ({
+  toothMap: { ...record.toothMap },
+  periodontal: { ...record.periodontal },
+  occlusion: { ...record.occlusion },
+  prescriptions: record.prescriptions,
+  notes: record.notes,
+  dentist: record.dentist,
+})
 
 function PatientRecordDetails() {
   const navigate = useNavigate()
   const { id } = useParams()
   const [tab, setTab] = useState('patient')
   const [modal, setModal] = useState(null)
-  const [toothMap, setToothMap] = useState(Object.fromEntries(Array.from({ length: 32 }, (_, i) => [i + 1, '?'])))
   const [patient, setPatient] = useState({
     id: id || '1', lastName: 'Doe', firstName: 'John', middleName: '', suffix: '', address: 'Blk 27 Lot 23, Forbes Subdivision Caloocan City',
     mobile: '09213232131', civilStatus: 'Single', occupation: 'Government employee', officeAddress: 'Oracle, Pasay City', sex: 'Male', age: '21', birthdate: '2003-12-05',
@@ -108,31 +131,45 @@ function PatientRecordDetails() {
   const [serviceRows, setServiceRows] = useState([{ id: 1, date: '2024-12-12', service: SERVICES[0], amount: 800, by: 'Robert Smith' }])
   const [selectedService, setSelectedService] = useState(null)
   const [serviceForm, setServiceForm] = useState({ id: null, date: '2025-12-12', service: SERVICES[0], amount: 800 })
+  const [dentalRecord, setDentalRecord] = useState(() => cloneDentalRecord(DEFAULT_DENTAL_RECORD))
+  const [dentalRecordForm, setDentalRecordForm] = useState(() => cloneDentalRecord(DEFAULT_DENTAL_RECORD))
   const options = ['?', ...LEGENDS.map((x) => x.code)]
-  const renderToothRow = (start, keyPrefix, rowType, positions) => (
+  const renderToothRow = (start, keyPrefix, rowType, positions, toothValues, onToothChange, disabled = false) => (
     <div className={`pr-drop-row ${rowType === 'top' ? 'pr-drop-row-top' : 'pr-drop-row-bottom'}`}>
       {Array.from({ length: 16 }, (_, i) => ({ tooth: i + start, left: positions[i] })).map(({ tooth, left }) => (
         <div key={`${keyPrefix}-${tooth}`} className="pr-drop-slot" style={{ left: `${left}%` }}>
-          <select value={toothMap[tooth]} onChange={(e) => setToothMap((p) => ({ ...p, [tooth]: e.target.value }))}>
+          <select
+            value={toothValues[`${rowType}-${tooth}`]}
+            disabled={disabled}
+            onChange={(e) => onToothChange(`${rowType}-${tooth}`, e.target.value)}
+          >
             {options.map((o) => <option key={o} value={o}>{o}</option>)}
           </select>
         </div>
       ))}
     </div>
   )
-  const renderDentalSection = (chart, start, keyPrefix, positions) => (
+  const renderDentalSection = (chart, start, keyPrefix, positions, toothValues, onToothChange, disabled = false) => (
     <div key={keyPrefix} className="pr-dental-section">
-      {renderToothRow(start, `${keyPrefix}-top`, 'top', positions)}
+      {renderToothRow(start, `${keyPrefix}-top`, 'top', positions, toothValues, onToothChange, disabled)}
       <img src={chart.src} alt={chart.alt} />
-      {renderToothRow(start, `${keyPrefix}-bottom`, 'bottom', positions)}
+      {renderToothRow(start, `${keyPrefix}-bottom`, 'bottom', positions, toothValues, onToothChange, disabled)}
     </div>
   )
 
-  const close = () => { setModal(null); setSelectedService(null) }
+  const close = () => { setModal(null); setSelectedService(null); setDentalRecordForm(cloneDentalRecord(dentalRecord)) }
+  const openDentalRecord = () => {
+    setDentalRecordForm(cloneDentalRecord(dentalRecord))
+    setModal('dental-record')
+  }
   const openServiceEdit = (row = null) => { setServiceForm(row || { id: null, date: '2025-12-12', service: SERVICES[0], amount: 800 }); setModal('service-edit') }
   const saveService = () => {
     if (serviceForm.id) setServiceRows((p) => p.map((r) => (r.id === serviceForm.id ? { ...r, ...serviceForm } : r)))
     else setServiceRows((p) => [...p, { ...serviceForm, id: p.length + 1, by: 'Robert Smith' }])
+    close()
+  }
+  const saveDentalRecord = () => {
+    setDentalRecord(cloneDentalRecord(dentalRecordForm))
     close()
   }
 
@@ -150,7 +187,7 @@ function PatientRecordDetails() {
 
         <div className="actions-row">
           {tab === 'patient' ? <button type="button" className="view">Export</button> : null}
-          {tab === 'dental' ? <button type="button" className="primary" onClick={() => setModal('dental-record')}>+ Update Dental Record</button> : null}
+          {tab === 'dental' ? <button type="button" className="primary" onClick={openDentalRecord}>+ Update Dental Record</button> : null}
           {tab === 'service' ? <button type="button" className="primary" onClick={() => openServiceEdit()}>+ Add Service Record</button> : null}
         </div>
 
@@ -159,7 +196,22 @@ function PatientRecordDetails() {
         {tab === 'patient' ? (
           <>
             <div className="pr-grid">
-              <article className="pr-card"><div className="pr-card-head"><h3>Details</h3><button type="button" className="mini-edit-btn" onClick={() => setModal('details')}>&#9998;</button></div><dl><dt>Address</dt><dd>{patient.address}</dd><dt>Sex</dt><dd>{patient.sex}</dd><dt>Age</dt><dd>{patient.age}</dd><dt>Civil Status</dt><dd>{patient.civilStatus}</dd><dt>Mobile Number</dt><dd>{patient.mobile}</dd><dt>Birthdate</dt><dd>{patient.birthdate}</dd><dt>Occupation</dt><dd>{patient.occupation}</dd><dt>Office Address</dt><dd>{patient.officeAddress}</dd></dl></article>
+              <article className="pr-card">
+                <div className="pr-card-head">
+                  <h3>Details</h3>
+                  <button type="button" className="mini-edit-btn" onClick={() => setModal('details')}>&#9998;</button>
+                </div>
+                <div className="pr-detail-list">
+                  <div className="pr-detail-item pr-detail-item-wide"><span className="pr-detail-label">Address</span><span className="pr-detail-value">{patient.address}</span></div>
+                  <div className="pr-detail-item"><span className="pr-detail-label">Sex</span><span className="pr-detail-value">{patient.sex}</span></div>
+                  <div className="pr-detail-item"><span className="pr-detail-label">Age</span><span className="pr-detail-value">{patient.age}</span></div>
+                  <div className="pr-detail-item"><span className="pr-detail-label">Civil Status</span><span className="pr-detail-value">{patient.civilStatus}</span></div>
+                  <div className="pr-detail-item"><span className="pr-detail-label">Birthdate</span><span className="pr-detail-value">{patient.birthdate}</span></div>
+                  <div className="pr-detail-item pr-detail-item-wide"><span className="pr-detail-label">Mobile Number</span><span className="pr-detail-value">{patient.mobile}</span></div>
+                  <div className="pr-detail-item"><span className="pr-detail-label">Occupation</span><span className="pr-detail-value">{patient.occupation}</span></div>
+                  <div className="pr-detail-item"><span className="pr-detail-label">Office Address</span><span className="pr-detail-value">{patient.officeAddress}</span></div>
+                </div>
+              </article>
               <div className="pr-stack">
                 <article className="pr-card"><div className="pr-card-head"><h3>Health Status</h3><button type="button" className="mini-edit-btn" onClick={() => setModal('health')}>&#9998;</button></div><div className="mini-check-grid three-col">{HEALTH.map((x) => <label key={x}><input type="checkbox" checked={health[x]} readOnly />{x}</label>)}</div></article>
                 <article className="pr-card"><div className="pr-card-head"><h3>Allergen Information</h3><button type="button" className="mini-edit-btn" onClick={() => setModal('allergen')}>&#9998;</button></div><div className="mini-check-grid two-col">{ALLERGENS.map((x) => <label key={x}><input type="checkbox" checked={allergens.values[x]} readOnly />{x}</label>)}<label>Others, please specify:<input type="text" readOnly value={allergens.others} /></label></div></article>
@@ -175,7 +227,36 @@ function PatientRecordDetails() {
         ) : null}
 
         {tab === 'dental' ? (
-          <article className="pr-card pr-dental-layout"><h3>Dental History</h3><div className="pr-dental-chart">{renderDentalSection(DENTAL_CHART_IMAGES[0], 1, 'chart-1', TOOTH_X_POSITIONS_BY_CHART.chart1)}<div className="pr-dental-divider" />{renderDentalSection(DENTAL_CHART_IMAGES[1], 17, 'chart-2', TOOTH_X_POSITIONS_BY_CHART.chart2)}</div></article>
+          <article className="pr-card pr-dental-layout pr-dental-prototype">
+            <div className="pr-split-header">
+              <article className="pr-screen-card">
+                <h4>Periodontal Screening</h4>
+                <div className="pr-option-grid">
+                  {PERIODONTAL.map((item) => <label key={item}><input type="checkbox" checked={dentalRecord.periodontal[item]} readOnly />{item}</label>)}
+                </div>
+              </article>
+              <article className="pr-screen-card">
+                <h4>Occlusion</h4>
+                <div className="pr-option-grid">
+                  {OCCLUSION.map((item) => <label key={item}><input type="checkbox" checked={dentalRecord.occlusion[item]} readOnly />{item}</label>)}
+                </div>
+              </article>
+            </div>
+
+            <div className="pr-dentist-tag"><strong>Dentist:</strong> <span className="pr-dentist-name">{dentalRecord.dentist}</span></div>
+
+            <section className="pr-dental-history-wrap">
+              <h3>Dental History</h3>
+              <div className="pr-dental-chart">{renderDentalSection(DENTAL_CHART_IMAGES[0], 1, 'chart-1', TOOTH_X_POSITIONS_BY_CHART.chart1, dentalRecord.toothMap, () => {}, true)}<div className="pr-dental-divider" />{renderDentalSection(DENTAL_CHART_IMAGES[1], 17, 'chart-2', TOOTH_X_POSITIONS_BY_CHART.chart2, dentalRecord.toothMap, () => {}, true)}</div>
+            </section>
+
+            <div className="pr-notes-grid">
+              <label>Dental Prescriptions<textarea readOnly value={dentalRecord.prescriptions} placeholder="Add a title bit of body text" /></label>
+              <label>Dental Notes<textarea readOnly value={dentalRecord.notes} placeholder="Add a title bit of body text" /></label>
+            </div>
+
+            <div className="pr-meta-row"><span>Date of last changes: May 5, 2025</span><span>Last changes by: Robert Smith</span></div>
+          </article>
         ) : null}
 
         {tab === 'service' ? <article className="service-list-card"><div className="service-list-head"><h3>Service Records</h3><h3>Actions</h3></div>{serviceRows.map((r) => <div key={r.id} className="service-list-row"><span>{r.date}</span><button type="button" className="view" onClick={() => { setSelectedService(r); setModal('service-view') }}>View</button><button type="button" className="mini-edit-btn" onClick={() => openServiceEdit(r)}>&#9998;</button></div>)}</article> : null}
@@ -191,7 +272,65 @@ function PatientRecordDetails() {
       {modal === 'medical-history' ? <div className="pr-modal"><div className="pr-modal-head"><h2>Update Medical History</h2><button type="button" onClick={close}>X</button></div><div className="pr-modal-body pr-modal-scroll"><div className="history-top-grid"><label>Name of Physician/Medical Doctor<input type="text" value={medical.physician} onChange={(e) => setMedical((p) => ({ ...p, physician: e.target.value }))} /></label><label>Specialty (if available)<input type="text" value={medical.specialty} onChange={(e) => setMedical((p) => ({ ...p, specialty: e.target.value }))} /></label><label className="span-2">Address<input type="text" value={medical.address} onChange={(e) => setMedical((p) => ({ ...p, address: e.target.value }))} /></label></div><section className="history-block"><h3>Answer the Following Questions:</h3>{MQ.map((q, i) => <div key={q.text} className="yes-no-item"><p>{q.text}</p><div className="yes-no-row"><label><input type="radio" checked={medical.answers[i] === 'YES'} onChange={() => setMedical((p) => ({ ...p, answers: { ...p.answers, [i]: 'YES' } }))} />Yes</label><label><input type="radio" checked={medical.answers[i] === 'NO'} onChange={() => setMedical((p) => ({ ...p, answers: { ...p.answers, [i]: 'NO' } }))} />No</label>{q.note ? <label className="note-field"><span>{q.note}</span><input type="text" value={medical.notes?.[i] || ''} onChange={(e) => setMedical((p) => ({ ...p, notes: { ...(p.notes || {}), [i]: e.target.value } }))} /></label> : null}</div></div>)}</section><div className="modal-actions"><button type="button" className="success-btn" onClick={close}>Save</button></div></div></div> : null}
       {modal === 'service-view' && selectedService ? <div className="pr-modal"><div className="pr-modal-head"><h2>View</h2><button type="button" onClick={close}>X</button></div><div className="pr-modal-body"><div className="service-date-row"><strong>Date</strong><span>{selectedService.date}</span></div><div className="service-view-table"><div className="service-view-head"><span>Services</span><span>Amount (PHP)</span></div><div className="service-view-line"><span>{selectedService.service}</span><span>{selectedService.amount}</span></div></div><p className="service-total">Total <strong>{selectedService.amount}</strong></p><p className="service-last-change">Last Changes by: {selectedService.by}</p><div className="modal-actions center"><button type="button" className="view" onClick={close}>Done</button></div></div></div> : null}
       {modal === 'service-edit' ? <div className="pr-modal"><div className="pr-modal-head"><h2>{serviceForm.id ? 'Edit' : 'Add'} Service Record</h2><button type="button" onClick={close}>X</button></div><div className="pr-modal-body"><div className="history-top-grid"><label>Date<input type="date" value={serviceForm.date} onChange={(e) => setServiceForm((p) => ({ ...p, date: e.target.value }))} /></label><label>Services<select value={serviceForm.service} onChange={(e) => setServiceForm((p) => ({ ...p, service: e.target.value, amount: DEFAULT_PRICE_MAP[e.target.value] || p.amount }))}>{SERVICES.map((s) => <option key={s}>{s}</option>)}</select></label><label>Amount (PHP)<input type="number" value={serviceForm.amount} onChange={(e) => setServiceForm((p) => ({ ...p, amount: Number(e.target.value) }))} /></label></div><div className="modal-actions"><button type="button" className="danger-btn" onClick={close}>Cancel</button><button type="button" className="success-btn" onClick={saveService}>Save</button></div></div></div> : null}
-      {modal === 'dental-record' ? <div className="pr-modal"><div className="pr-modal-head"><h2>Update Dental Records</h2><button type="button" onClick={close}>X</button></div><div className="pr-modal-body pr-modal-scroll"><div className="pr-modal-section-title">Dental Chart</div><div className="pr-dental-chart">{renderDentalSection(DENTAL_CHART_IMAGES[0], 1, 'modal-chart-1', TOOTH_X_POSITIONS_BY_CHART.chart1)}<div className="pr-dental-divider" />{renderDentalSection(DENTAL_CHART_IMAGES[1], 17, 'modal-chart-2', TOOTH_X_POSITIONS_BY_CHART.chart2)}</div><div className="modal-actions"><button type="button" className="danger-btn" onClick={close}>Cancel</button><button type="button" className="success-btn" onClick={close}>Save</button></div></div></div> : null}
+      {modal === 'dental-record' ? (
+        <div className="pr-modal">
+          <div className="pr-modal-head"><h2>Update Dental Records</h2><button type="button" onClick={close}>X</button></div>
+          <div className="pr-modal-body pr-modal-scroll pr-dental-record-modal">
+            <div className="pr-modal-section-title">Check the Following</div>
+            <div className="pr-dental-check-grid">
+              <article className="pr-dental-check-card">
+                <h4>Periodontal Screening</h4>
+                <div className="pr-dental-check-options">
+                  {PERIODONTAL.map((item) => (
+                    <label key={`modal-periodontal-${item}`}>
+                      <input
+                        type="checkbox"
+                        checked={dentalRecordForm.periodontal[item]}
+                        onChange={() => setDentalRecordForm((p) => ({ ...p, periodontal: { ...p.periodontal, [item]: !p.periodontal[item] } }))}
+                      />
+                      {item}
+                    </label>
+                  ))}
+                </div>
+              </article>
+              <article className="pr-dental-check-card">
+                <h4>Occlusion</h4>
+                <div className="pr-dental-check-options">
+                  {OCCLUSION.map((item) => (
+                    <label key={`modal-occlusion-${item}`}>
+                      <input
+                        type="checkbox"
+                        checked={dentalRecordForm.occlusion[item]}
+                        onChange={() => setDentalRecordForm((p) => ({ ...p, occlusion: { ...p.occlusion, [item]: !p.occlusion[item] } }))}
+                      />
+                      {item}
+                    </label>
+                  ))}
+                </div>
+              </article>
+            </div>
+
+            <div className="pr-modal-section-title">Dental Chart</div>
+            <div className="pr-dental-chart">{renderDentalSection(DENTAL_CHART_IMAGES[0], 1, 'modal-chart-1', TOOTH_X_POSITIONS_BY_CHART.chart1, dentalRecordForm.toothMap, (tooth, value) => setDentalRecordForm((p) => ({ ...p, toothMap: { ...p.toothMap, [tooth]: value } })))}<div className="pr-dental-divider" />{renderDentalSection(DENTAL_CHART_IMAGES[1], 17, 'modal-chart-2', TOOTH_X_POSITIONS_BY_CHART.chart2, dentalRecordForm.toothMap, (tooth, value) => setDentalRecordForm((p) => ({ ...p, toothMap: { ...p.toothMap, [tooth]: value } })))}</div>
+
+            <div className="pr-modal-section-title">Fill the Details</div>
+            <div className="pr-dental-modal-notes">
+              <label>Dental Prescriptions<textarea value={dentalRecordForm.prescriptions} onChange={(e) => setDentalRecordForm((p) => ({ ...p, prescriptions: e.target.value }))} placeholder="Add a little bit of body text" /></label>
+              <label>Dental Notes<textarea value={dentalRecordForm.notes} onChange={(e) => setDentalRecordForm((p) => ({ ...p, notes: e.target.value }))} placeholder="Add a little bit of body text" /></label>
+            </div>
+            <div className="pr-dental-modal-dentist">
+              <label>
+                Add Dentist
+                <select value={dentalRecordForm.dentist} onChange={(e) => setDentalRecordForm((p) => ({ ...p, dentist: e.target.value }))}>
+                  {DENTISTS.map((dentist) => <option key={dentist} value={dentist}>{dentist}</option>)}
+                </select>
+              </label>
+            </div>
+
+            <div className="modal-actions center"><button type="button" className="danger-btn" onClick={close}>Cancel</button><button type="button" className="success-btn" onClick={saveDentalRecord}>Save</button></div>
+          </div>
+        </div>
+      ) : null}
     </>
   )
 }
