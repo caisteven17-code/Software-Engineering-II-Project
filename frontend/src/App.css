@@ -708,7 +708,8 @@
 
 .pagination button {
   border: none;
-  background: transparent;
+  background: #e3e8ec;
+  color: #7d8992;
   padding: 6px 10px;
   border-radius: 6px;
   cursor: pointer;
@@ -717,6 +718,8 @@
 .pagination button.active {
   background: #fff;
   border: 1px solid #cfd8de;
+  color: #1e7aa3;
+  font-weight: 700;
 }
 
 .top-row {
@@ -927,6 +930,16 @@
   color: #6a7b87;
 }
 
+.required-asterisk {
+  color: #d62828;
+  font-weight: 700;
+}
+
+.required-label {
+  display: inline-flex;
+  align-items: center;
+}
+
 .form-grid input {
   border: 1px solid #bcc7cf;
   padding: 8px 10px;
@@ -935,6 +948,10 @@
 
 .form-grid .span-2 {
   grid-column: span 2;
+}
+
+.form-grid .span-3 {
+  grid-column: span 3;
 }
 
 .minor-block {
@@ -950,8 +967,8 @@
 }
 
 .add-patient-prototype {
-  max-height: calc(100vh - 140px);
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
   padding: 0 10px 24px;
 }
 
@@ -1105,6 +1122,11 @@
   border: 1px solid #afbcc6;
   border-radius: 4px;
   padding: 6px 8px;
+}
+
+.checkbox-grid .other-field input.is-hidden {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .authorization-wrap {
@@ -2365,36 +2387,65 @@
 
 .service-list-card {
   width: min(920px, 100%);
-  margin: 14px auto 0;
-  background: #fff;
+  margin: 12px auto 0;
+  background: #f1f1f1;
   border-radius: 10px;
-  padding: 18px;
+  padding: 16px 24px 18px;
 }
 
 .service-list-head,
 .service-list-row {
   display: grid;
-  grid-template-columns: 1fr 120px 42px;
+  grid-template-columns: 1fr 130px 42px;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
 }
 
 .service-list-head {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+}
+
+.service-list-head h3:last-child {
+  grid-column: 2 / 4;
+  justify-self: start;
+  margin-left: 0;
 }
 
 .service-list-head h3 {
   margin: 0;
-  font-size: 32px;
+  font-size: 30px;
 }
 
 .service-list-row {
-  padding: 8px 0;
+  padding: 7px 0;
 }
 
 .service-list-row span {
-  font-size: 30px;
-  color: #2d4250;
+  font-size: 24px;
+  color: #2a2f33;
+}
+
+.service-list-row .view,
+.service-list-row .mini-edit-btn {
+  justify-self: center;
+}
+
+.service-list-row .view {
+  margin-left: 0;
+  min-width: 148px;
+  padding: 6px 0;
+  border-radius: 8px;
+  background: #18aee0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.service-list-row .mini-edit-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #0f6f94;
+  font-size: 16px;
 }
 
 .details-footer {
@@ -2496,6 +2547,166 @@
   margin-top: 12px;
   font-size: 16px;
   color: #344d5c;
+}
+
+.service-ledger-modal {
+  width: min(760px, calc(100vw - 24px));
+}
+
+.service-ledger-modal .pr-modal-head h2 {
+  font-size: 34px;
+}
+
+.service-ledger-date {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  width: min(560px, 100%);
+  margin: 8px auto 20px;
+  border: 3px solid #1a2b36;
+  background: #f8fbfd;
+}
+
+.service-ledger-date-label {
+  display: grid;
+  place-items: center;
+  background: #0c6284;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  padding: 10px;
+}
+
+.service-ledger-date-field {
+  position: relative;
+  display: grid;
+  align-items: center;
+  padding: 0 14px;
+}
+
+.service-ledger-date-field input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #4a5964;
+  font-size: 18px;
+  font-weight: 500;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+}
+
+.service-ledger-date-field input:focus {
+  outline: none;
+}
+
+.service-ledger-table {
+  width: min(650px, 100%);
+  margin: 0 auto;
+  border: 1px solid #c8d3da;
+  background: #f7fafb;
+}
+
+.service-ledger-head,
+.service-ledger-row,
+.service-ledger-total {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 240px;
+  align-items: center;
+}
+
+.service-ledger-head span:last-child,
+.service-ledger-total strong:last-child {
+  text-align: right;
+}
+
+.service-ledger-head {
+  background: #f1f1f1;
+  color: #4d5459;
+  font-weight: 700;
+  font-size: 18px;
+  padding: 12px 16px;
+}
+
+.service-ledger-rows {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.service-ledger-row {
+  min-height: 56px;
+  border-top: 1px solid #d4dde3;
+  background: #f7fafb;
+}
+
+.service-ledger-row select,
+.service-ledger-amount input {
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #4b5963;
+  font-family: 'Poppins', 'Segoe UI', sans-serif;
+  font-size: 16px;
+  padding: 10px 16px;
+}
+
+.service-ledger-row select {
+  text-align: left;
+}
+
+.service-ledger-row select:focus,
+.service-ledger-amount input:focus {
+  outline: none;
+}
+
+.service-ledger-amount {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-items: end;
+  border-left: 1px solid #d4dde3;
+  padding: 0 16px 0 10px;
+}
+
+.service-ledger-amount span {
+  color: #4b5963;
+  font-size: 16px;
+  font-weight: 500;
+  margin-right: 6px;
+}
+
+.service-ledger-amount input {
+  text-align: right;
+  max-width: 120px;
+  padding: 10px 0;
+}
+
+.service-ledger-amount input::-webkit-outer-spin-button,
+.service-ledger-amount input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.service-ledger-amount input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+.service-ledger-row-empty span {
+  display: block;
+  min-height: 54px;
+}
+
+.service-ledger-row-empty span:last-child {
+  border-left: 1px solid #d4dde3;
+}
+
+.service-ledger-total {
+  border-top: 1px solid #d4dde3;
+  padding: 14px 16px;
+  font-size: 20px;
+  color: #48565f;
+  background: #f7fafb;
+}
+
+.service-ledger-total strong:last-child {
+  text-align: right;
 }
 
 .pr-dental-chart {
@@ -2827,6 +3038,11 @@
     font-size: 24px;
   }
 
+  .service-list-head h3:last-child {
+    grid-column: auto;
+    margin-left: 0;
+  }
+
   .service-list-row span {
     font-size: 20px;
   }
@@ -3010,5 +3226,39 @@
 
   .add-user-card h2 {
     font-size: 42px;
+  }
+
+  .service-ledger-date-label {
+    font-size: 18px;
+  }
+
+  .service-ledger-date-field input {
+    font-size: 16px;
+  }
+
+  .service-ledger-head {
+    font-size: 16px;
+  }
+
+  .service-ledger-row select,
+  .service-ledger-amount input,
+  .service-ledger-amount span {
+    font-size: 15px;
+  }
+
+  .service-ledger-total {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 700px) {
+  .service-ledger-date {
+    grid-template-columns: 98px minmax(0, 1fr);
+  }
+
+  .service-ledger-head,
+  .service-ledger-row,
+  .service-ledger-total {
+    grid-template-columns: 1fr 165px;
   }
 }

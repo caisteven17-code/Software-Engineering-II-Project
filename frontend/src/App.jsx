@@ -37,7 +37,7 @@ function ProtectedLayout({ onLogout }) {
           <Route path="/procedure" element={<Procedures />} />
           <Route path="/logs" element={<PatientLogs />} />
           <Route path="/admin" element={<Admin />} />
-          <Route path="*" element={<Navigate to="/records" replace />} />
+          <Route path="*" element={<Navigate to="/home" replace />} />
         </Routes>
       </main>
     </div>
@@ -64,7 +64,7 @@ function AppRoutes() {
     if (form.username === 'admin' && form.password === 'admin123') {
       setIsAuthed(true)
       setError('')
-      navigate('/records', { replace: true })
+      navigate('/home', { replace: true })
       return
     }
 
@@ -72,6 +72,9 @@ function AppRoutes() {
   }
 
   const handleLogout = () => {
+    const confirmed = window.confirm('Are you sure you want to logout?')
+    if (!confirmed) return
+
     setIsAuthed(false)
     setForm({ username: '', password: '' })
     setShowPassword(false)
@@ -83,7 +86,7 @@ function AppRoutes() {
   }
 
   if (isAuthed && location.pathname === '/login') {
-    return <Navigate to="/records" replace />
+    return <Navigate to="/home" replace />
   }
 
   return (

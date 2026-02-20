@@ -69,25 +69,36 @@ const CHECKBOX_CONDITIONS = [
   'Others',
 ]
 
-function YesNoQuestion({ index, item, prefix }) {
+function YesNoQuestion({ index, item, prefix, answerValue, noteValue, onAnswerChange, onNoteChange }) {
   const fieldName = `${prefix}-${index}`
+  const showFollowup = prefix === 'medical' ? answerValue === 'YES' : Boolean(item.note)
 
   return (
     <div className="yes-no-item">
       <p>{item.text}</p>
       <div className="yes-no-row">
         <label>
-          <input type="radio" name={fieldName} />
+          <input
+            type="radio"
+            name={fieldName}
+            checked={answerValue === 'YES'}
+            onChange={() => onAnswerChange?.('YES')}
+          />
           Yes
         </label>
         <label>
-          <input type="radio" name={fieldName} />
+          <input
+            type="radio"
+            name={fieldName}
+            checked={answerValue === 'NO'}
+            onChange={() => onAnswerChange?.('NO')}
+          />
           No
         </label>
-        {item.note ? (
+        {item.note && showFollowup ? (
           <label className="note-field">
             <span>{item.note}</span>
-            <input type="text" />
+            <input type="text" value={noteValue || ''} onChange={(e) => onNoteChange?.(e.target.value)} />
           </label>
         ) : null}
       </div>
@@ -97,9 +108,73 @@ function YesNoQuestion({ index, item, prefix }) {
 
 function AddPatient() {
   const [activeStep, setActiveStep] = useState(0)
+  const [medicalAnswers, setMedicalAnswers] = useState({})
+  const [medicalNotes, setMedicalNotes] = useState({})
+  const [allergenInfo, setAllergenInfo] = useState({
+    localAnesthetic: false,
+    penicillin: false,
+    sulfaDrugs: false,
+    latex: false,
+    aspirin: false,
+    others: false,
+    othersText: '',
+  })
+  const [patientInfo, setPatientInfo] = useState({
+    lastName: '',
+    firstName: '',
+    middleName: '',
+    suffix: '',
+    birthdate: '',
+    sex: '',
+    age: '',
+    nickname: '',
+    email: '',
+    civilStatus: '',
+    currentAddress: '',
+    mobileNumber: '',
+    occupation: '',
+    officeAddress: '',
+    guardianName: '',
+    guardianMobileNumber: '',
+    guardianOccupation: '',
+    guardianOfficeAddress: '',
+  })
+
+  const isMinor = Number(patientInfo.age) > 0 && Number(patientInfo.age) < 18
+
+  const validatePatientInformationStep = () => {
+    const requiredFields = [
+      'lastName',
+      'firstName',
+      'birthdate',
+      'sex',
+      'age',
+      'civilStatus',
+      'currentAddress',
+      'mobileNumber',
+      'occupation',
+    ]
+    const minorRequiredFields = ['guardianName', 'guardianMobileNumber', 'guardianOccupation']
+    const fieldsToValidate = isMinor ? [...requiredFields, ...minorRequiredFields] : requiredFields
+    const hasMissingRequiredField = fieldsToValidate.some((field) => `${patientInfo[field]}`.trim() === '')
+
+    if (hasMissingRequiredField) {
+      window.alert('Please complete all required fields marked with * before proceeding.')
+      return false
+    }
+    return true
+  }
 
   const nextStep = () => {
+    if (activeStep === 0 && !validatePatientInformationStep()) return
     setActiveStep((prev) => Math.min(prev + 1, STEPS.length - 1))
+  }
+  const toggleAllergen = (key) => {
+    setAllergenInfo((prev) => {
+      const next = { ...prev, [key]: !prev[key] }
+      if (key === 'others' && prev.others) next.othersText = ''
+      return next
+    })
   }
 
   return (
@@ -128,83 +203,85 @@ function AddPatient() {
 
             <div className="form-grid">
               <label>
-                Last Name*
-                <input type="text" />
+                <span className="required-label">Last Name<span className="required-asterisk">*</span></span>
+                <input type="text" required value={patientInfo.lastName} onChange={(e) => setPatientInfo((p) => ({ ...p, lastName: e.target.value }))} />
               </label>
               <label>
-                First Name*
-                <input type="text" />
+                <span className="required-label">First Name<span className="required-asterisk">*</span></span>
+                <input type="text" required value={patientInfo.firstName} onChange={(e) => setPatientInfo((p) => ({ ...p, firstName: e.target.value }))} />
               </label>
               <label>
                 Middle Name
-                <input type="text" />
+                <input type="text" value={patientInfo.middleName} onChange={(e) => setPatientInfo((p) => ({ ...p, middleName: e.target.value }))} />
               </label>
               <label>
                 Suffix
-                <input type="text" />
+                <input type="text" value={patientInfo.suffix} onChange={(e) => setPatientInfo((p) => ({ ...p, suffix: e.target.value }))} />
               </label>
               <label>
-                Birthdate*
-                <input type="text" />
+                <span className="required-label">Birthdate<span className="required-asterisk">*</span></span>
+                <input type="text" required value={patientInfo.birthdate} onChange={(e) => setPatientInfo((p) => ({ ...p, birthdate: e.target.value }))} />
               </label>
               <label>
-                Sex*
-                <input type="text" />
+                <span className="required-label">Sex<span className="required-asterisk">*</span></span>
+                <input type="text" required value={patientInfo.sex} onChange={(e) => setPatientInfo((p) => ({ ...p, sex: e.target.value }))} />
               </label>
               <label>
-                Age*
-                <input type="text" />
+                <span className="required-label">Age<span className="required-asterisk">*</span></span>
+                <input type="text" required value={patientInfo.age} onChange={(e) => setPatientInfo((p) => ({ ...p, age: e.target.value }))} />
               </label>
               <label>
                 Nickname
-                <input type="text" />
+                <input type="text" value={patientInfo.nickname} onChange={(e) => setPatientInfo((p) => ({ ...p, nickname: e.target.value }))} />
               </label>
-              <label className="span-2">
+              <label className="span-3">
                 Email Address
-                <input type="text" />
+                <input type="text" value={patientInfo.email} onChange={(e) => setPatientInfo((p) => ({ ...p, email: e.target.value }))} />
               </label>
               <label>
-                Civil Status*
-                <input type="text" />
+                <span className="required-label">Civil Status<span className="required-asterisk">*</span></span>
+                <input type="text" required value={patientInfo.civilStatus} onChange={(e) => setPatientInfo((p) => ({ ...p, civilStatus: e.target.value }))} />
               </label>
-              <label className="span-2">
-                Current Address*
-                <input type="text" />
-              </label>
-              <label>
-                Mobile Number*
-                <input type="text" />
+              <label className="span-3">
+                <span className="required-label">Current Address<span className="required-asterisk">*</span></span>
+                <input type="text" required value={patientInfo.currentAddress} onChange={(e) => setPatientInfo((p) => ({ ...p, currentAddress: e.target.value }))} />
               </label>
               <label>
-                Occupation*
-                <input type="text" />
+                <span className="required-label">Mobile Number<span className="required-asterisk">*</span></span>
+                <input type="text" required value={patientInfo.mobileNumber} onChange={(e) => setPatientInfo((p) => ({ ...p, mobileNumber: e.target.value }))} />
               </label>
-              <label className="span-2">
+              <label>
+                <span className="required-label">Occupation<span className="required-asterisk">*</span></span>
+                <input type="text" required value={patientInfo.occupation} onChange={(e) => setPatientInfo((p) => ({ ...p, occupation: e.target.value }))} />
+              </label>
+              <label className="span-3">
                 Office Address
-                <input type="text" />
+                <input type="text" value={patientInfo.officeAddress} onChange={(e) => setPatientInfo((p) => ({ ...p, officeAddress: e.target.value }))} />
               </label>
             </div>
 
             <div className="minor-block">
               <p>FOR MINORS (Visible when age &lt; 18)</p>
-              <div className="form-grid">
-                <label className="span-2">
-                  Parent/Guardian Name*
-                  <input type="text" />
-                </label>
-                <label>
-                  Mobile Number*
-                  <input type="text" />
-                </label>
-                <label>
-                  Occupation*
-                  <input type="text" />
-                </label>
-                <label className="span-2">
-                  Office Address
-                  <input type="text" />
-                </label>
-              </div>
+              {isMinor ? (
+                <div className="form-grid">
+                  <label className="span-2">
+                    <span className="required-label">Parent/Guardian Name<span className="required-asterisk">*</span></span>
+                    <input type="text" required value={patientInfo.guardianName} onChange={(e) => setPatientInfo((p) => ({ ...p, guardianName: e.target.value }))} />
+                  </label>
+                  <label>
+                    <span className="required-label">Mobile Number<span className="required-asterisk">*</span></span>
+                    <input type="text" required value={patientInfo.guardianMobileNumber} onChange={(e) => setPatientInfo((p) => ({ ...p, guardianMobileNumber: e.target.value }))} />
+                  </label>
+                  <label>
+                    <span className="required-label">Occupation<span className="required-asterisk">*</span></span>
+                    <input type="text" required value={patientInfo.guardianOccupation} onChange={(e) => setPatientInfo((p) => ({ ...p, guardianOccupation: e.target.value }))} />
+                  </label>
+                  <label className="span-2">
+                    Office Address
+                    <input type="text" value={patientInfo.guardianOfficeAddress} onChange={(e) => setPatientInfo((p) => ({ ...p, guardianOfficeAddress: e.target.value }))} />
+                  </label>
+                </div>
+              ) : null}
             </div>
           </>
         ) : null}
@@ -231,7 +308,16 @@ function AddPatient() {
             <section className="history-block">
               <h3>Answer the Following Questions:</h3>
               {MEDICAL_QUESTIONS.map((item, index) => (
-                <YesNoQuestion key={item.text} item={item} index={index} prefix="medical" />
+                <YesNoQuestion
+                  key={item.text}
+                  item={item}
+                  index={index}
+                  prefix="medical"
+                  answerValue={medicalAnswers[index]}
+                  noteValue={medicalNotes[index]}
+                  onAnswerChange={(value) => setMedicalAnswers((p) => ({ ...p, [index]: value }))}
+                  onNoteChange={(value) => setMedicalNotes((p) => ({ ...p, [index]: value }))}
+                />
               ))}
             </section>
 
@@ -240,13 +326,13 @@ function AddPatient() {
               <div className="check-group">
                 <p>Are you allergic to any of the following?</p>
                 <div className="checkbox-grid two-col">
-                  <label><input type="checkbox" />Local Anesthetic (ex. Lidocaine)</label>
-                  <label><input type="checkbox" />Penicillin/Antibiotics</label>
-                  <label><input type="checkbox" />Sulfa Drugs</label>
-                  <label><input type="checkbox" />Others, please specify:</label>
-                  <label><input type="checkbox" />Latex/Rubber</label>
-                  <label className="other-field"><input type="text" /></label>
-                  <label><input type="checkbox" />Aspirin</label>
+                  <label><input type="checkbox" checked={allergenInfo.localAnesthetic} onChange={() => toggleAllergen('localAnesthetic')} />Local Anesthetic (ex. Lidocaine)</label>
+                  <label><input type="checkbox" checked={allergenInfo.penicillin} onChange={() => toggleAllergen('penicillin')} />Penicillin/Antibiotics</label>
+                  <label><input type="checkbox" checked={allergenInfo.sulfaDrugs} onChange={() => toggleAllergen('sulfaDrugs')} />Sulfa Drugs</label>
+                  <label><input type="checkbox" checked={allergenInfo.others} onChange={() => toggleAllergen('others')} />Others, please specify:</label>
+                  <label><input type="checkbox" checked={allergenInfo.latex} onChange={() => toggleAllergen('latex')} />Latex/Rubber</label>
+                  <label className="other-field"><input type="text" className={allergenInfo.others ? '' : 'is-hidden'} value={allergenInfo.othersText} onChange={(e) => setAllergenInfo((p) => ({ ...p, othersText: e.target.value }))} /></label>
+                  <label><input type="checkbox" checked={allergenInfo.aspirin} onChange={() => toggleAllergen('aspirin')} />Aspirin</label>
                 </div>
               </div>
             </section>

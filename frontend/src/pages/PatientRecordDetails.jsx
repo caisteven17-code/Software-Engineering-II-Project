@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { LEGENDS, SERVICES } from '../data/mockData'
 import dentalChart1 from '../assets/Dental Chart 1.png'
@@ -102,6 +102,9 @@ const cloneDentalRecord = (record) => ({
   notes: record.notes,
   dentist: record.dentist,
 })
+const createEmptyServiceLine = () => ({ service: '', amount: '' })
+const isServiceLineEmpty = (line) => !line.service && `${line.amount ?? ''}`.trim() === ''
+const toServiceAmount = (value) => Number(value || 0)
 
 function PatientRecordDetails() {
   const navigate = useNavigate()
@@ -130,7 +133,7 @@ function PatientRecordDetails() {
   })
   const [serviceRows, setServiceRows] = useState([{ id: 1, date: '2024-12-12', service: SERVICES[0], amount: 800, by: 'Robert Smith' }])
   const [selectedService, setSelectedService] = useState(null)
-  const [serviceForm, setServiceForm] = useState({ id: null, date: '2025-12-12', service: SERVICES[0], amount: 800 })
+  const [serviceForm, setServiceForm] = useState({ id: null, date: '2025-12-12', lines: [createEmptyServiceLine()] })
   const [dentalRecord, setDentalRecord] = useState(() => cloneDentalRecord(DEFAULT_DENTAL_RECORD))
   const [dentalRecordForm, setDentalRecordForm] = useState(() => cloneDentalRecord(DEFAULT_DENTAL_RECORD))
   const options = ['?', ...LEGENDS.map((x) => x.code)]
@@ -162,16 +165,84 @@ function PatientRecordDetails() {
     setDentalRecordForm(cloneDentalRecord(dentalRecord))
     setModal('dental-record')
   }
-  const openServiceEdit = (row = null) => { setServiceForm(row || { id: null, date: '2025-12-12', service: SERVICES[0], amount: 800 }); setModal('service-edit') }
+  const openServiceEdit = (row = null) => {
+    if (row) {
+      setServiceForm({ id: row.id, date: row.date, lines: [{ service: row.service, amount: row.amount }, createEmptyServiceLine()] })
+    } else {
+      setServiceForm({ id: null, date: '2025-12-12', lines: [createEmptyServiceLine()] })
+    }
+    setModal('service-edit')
+  }
+  const updateServiceLine = (index, patch) => {
+    setServiceForm((prev) => {
+      const nextLines = prev.lines.map((line, i) => (i === index ? { ...line, ...patch } : line))
+      return { ...prev, lines: nextLines }
+    })
+  }
   const saveService = () => {
-    if (serviceForm.id) setServiceRows((p) => p.map((r) => (r.id === serviceForm.id ? { ...r, ...serviceForm } : r)))
-    else setServiceRows((p) => [...p, { ...serviceForm, id: p.length + 1, by: 'Robert Smith' }])
+    const filledLines = serviceForm.lines
+      .filter((line) => line.service && `${line.amount ?? ''}`.trim() !== '')
+      .map((line) => ({ service: line.service, amount: toServiceAmount(line.amount) }))
+
+    if (!filledLines.length) {
+      close()
+      return
+    }
+
+    if (serviceForm.id) {
+      const [first, ...extra] = filledLines
+      setServiceRows((prev) => {
+        const updated = prev.map((row) => (
+          row.id === serviceForm.id ? { ...row, date: serviceForm.date, service: first.service, amount: first.amount } : row
+        ))
+        let nextId = updated.reduce((max, row) => Math.max(max, row.id), 0) + 1
+        const extraRows = extra.map((line) => ({ id: nextId++, date: serviceForm.date, service: line.service, amount: line.amount, by: 'Robert Smith' }))
+        return [...updated, ...extraRows]
+      })
+    } else {
+      setServiceRows((prev) => {
+        let nextId = prev.reduce((max, row) => Math.max(max, row.id), 0) + 1
+        const newRows = filledLines.map((line) => ({ id: nextId++, date: serviceForm.date, service: line.service, amount: line.amount, by: 'Robert Smith' }))
+        return [...prev, ...newRows]
+      })
+    }
+
     close()
   }
   const saveDentalRecord = () => {
     setDentalRecord(cloneDentalRecord(dentalRecordForm))
     close()
   }
+  useEffect(() => {
+    if (modal !== 'service-edit') return
+
+    setServiceForm((prev) => {
+      const lines = prev.lines.length ? prev.lines : [createEmptyServiceLine()]
+      const lastLine = lines[lines.length - 1]
+      const shouldAddBlank = !isServiceLineEmpty(lastLine)
+
+      if (shouldAddBlank) {
+        return { ...prev, lines: [...lines, createEmptyServiceLine()] }
+      }
+
+      let end = lines.length
+      while (end > 1 && isServiceLineEmpty(lines[end - 1]) && isServiceLineEmpty(lines[end - 2])) {
+        end -= 1
+      }
+      if (end !== lines.length) {
+        return { ...prev, lines: lines.slice(0, end) }
+      }
+
+      if (lines !== prev.lines) {
+        return { ...prev, lines }
+      }
+      return prev
+    })
+  }, [modal, serviceForm.lines])
+  const serviceLedgerTotal = serviceForm.lines.reduce(
+    (sum, line) => (line.service && `${line.amount ?? ''}`.trim() !== '' ? sum + toServiceAmount(line.amount) : sum),
+    0,
+  )
 
   return (
     <>
@@ -271,7 +342,7 @@ function PatientRecordDetails() {
       {modal === 'dental-history' ? <div className="pr-modal"><div className="pr-modal-head"><h2>Update Dental History</h2><button type="button" onClick={close}>X</button></div><div className="pr-modal-body pr-modal-scroll"><div className="history-top-grid"><label>Name of Previous Dentist<input type="text" value={dental.previous} onChange={(e) => setDental((p) => ({ ...p, previous: e.target.value }))} /></label><label>Date of last Exam<input type="date" value={dental.lastExam} onChange={(e) => setDental((p) => ({ ...p, lastExam: e.target.value }))} /></label><label className="span-2">What is the reason for Dental Consultation?<input type="text" value={dental.reason} onChange={(e) => setDental((p) => ({ ...p, reason: e.target.value }))} /></label></div><section className="history-block"><h3>Answer the Following Questions:</h3>{DQ.map((q, i) => <div key={q.text} className="yes-no-item"><p>{q.text}</p><div className="yes-no-row"><label><input type="radio" checked={dental.answers[i] === 'YES'} onChange={() => setDental((p) => ({ ...p, answers: { ...p.answers, [i]: 'YES' } }))} />Yes</label><label><input type="radio" checked={dental.answers[i] === 'NO'} onChange={() => setDental((p) => ({ ...p, answers: { ...p.answers, [i]: 'NO' } }))} />No</label>{q.note ? <label className="note-field"><span>{q.note}</span><input type="text" value={dental.notes?.[i] || ''} onChange={(e) => setDental((p) => ({ ...p, notes: { ...(p.notes || {}), [i]: e.target.value } }))} /></label> : null}</div></div>)}</section><div className="modal-actions"><button type="button" className="success-btn" onClick={close}>Save</button></div></div></div> : null}
       {modal === 'medical-history' ? <div className="pr-modal"><div className="pr-modal-head"><h2>Update Medical History</h2><button type="button" onClick={close}>X</button></div><div className="pr-modal-body pr-modal-scroll"><div className="history-top-grid"><label>Name of Physician/Medical Doctor<input type="text" value={medical.physician} onChange={(e) => setMedical((p) => ({ ...p, physician: e.target.value }))} /></label><label>Specialty (if available)<input type="text" value={medical.specialty} onChange={(e) => setMedical((p) => ({ ...p, specialty: e.target.value }))} /></label><label className="span-2">Address<input type="text" value={medical.address} onChange={(e) => setMedical((p) => ({ ...p, address: e.target.value }))} /></label></div><section className="history-block"><h3>Answer the Following Questions:</h3>{MQ.map((q, i) => <div key={q.text} className="yes-no-item"><p>{q.text}</p><div className="yes-no-row"><label><input type="radio" checked={medical.answers[i] === 'YES'} onChange={() => setMedical((p) => ({ ...p, answers: { ...p.answers, [i]: 'YES' } }))} />Yes</label><label><input type="radio" checked={medical.answers[i] === 'NO'} onChange={() => setMedical((p) => ({ ...p, answers: { ...p.answers, [i]: 'NO' } }))} />No</label>{q.note ? <label className="note-field"><span>{q.note}</span><input type="text" value={medical.notes?.[i] || ''} onChange={(e) => setMedical((p) => ({ ...p, notes: { ...(p.notes || {}), [i]: e.target.value } }))} /></label> : null}</div></div>)}</section><div className="modal-actions"><button type="button" className="success-btn" onClick={close}>Save</button></div></div></div> : null}
       {modal === 'service-view' && selectedService ? <div className="pr-modal"><div className="pr-modal-head"><h2>View</h2><button type="button" onClick={close}>X</button></div><div className="pr-modal-body"><div className="service-date-row"><strong>Date</strong><span>{selectedService.date}</span></div><div className="service-view-table"><div className="service-view-head"><span>Services</span><span>Amount (PHP)</span></div><div className="service-view-line"><span>{selectedService.service}</span><span>{selectedService.amount}</span></div></div><p className="service-total">Total <strong>{selectedService.amount}</strong></p><p className="service-last-change">Last Changes by: {selectedService.by}</p><div className="modal-actions center"><button type="button" className="view" onClick={close}>Done</button></div></div></div> : null}
-      {modal === 'service-edit' ? <div className="pr-modal"><div className="pr-modal-head"><h2>{serviceForm.id ? 'Edit' : 'Add'} Service Record</h2><button type="button" onClick={close}>X</button></div><div className="pr-modal-body"><div className="history-top-grid"><label>Date<input type="date" value={serviceForm.date} onChange={(e) => setServiceForm((p) => ({ ...p, date: e.target.value }))} /></label><label>Services<select value={serviceForm.service} onChange={(e) => setServiceForm((p) => ({ ...p, service: e.target.value, amount: DEFAULT_PRICE_MAP[e.target.value] || p.amount }))}>{SERVICES.map((s) => <option key={s}>{s}</option>)}</select></label><label>Amount (PHP)<input type="number" value={serviceForm.amount} onChange={(e) => setServiceForm((p) => ({ ...p, amount: Number(e.target.value) }))} /></label></div><div className="modal-actions"><button type="button" className="danger-btn" onClick={close}>Cancel</button><button type="button" className="success-btn" onClick={saveService}>Save</button></div></div></div> : null}
+      {modal === 'service-edit' ? <div className="pr-modal service-ledger-modal"><div className="pr-modal-head"><h2>{serviceForm.id ? 'Edit' : 'Add'} Service Record</h2><button type="button" onClick={close}>X</button></div><div className="pr-modal-body"><div className="service-ledger-date"><span className="service-ledger-date-label">Date</span><label className="service-ledger-date-field"><input type="date" value={serviceForm.date} onChange={(e) => setServiceForm((p) => ({ ...p, date: e.target.value }))} /></label></div><div className="service-ledger-table"><div className="service-ledger-head"><span>Services</span><span>Amount (PHP)</span></div><div className="service-ledger-rows">{serviceForm.lines.map((line, index) => <div key={`service-line-${index}`} className="service-ledger-row"><select value={line.service} onChange={(e) => updateServiceLine(index, { service: e.target.value })}><option value="">Select service</option>{SERVICES.map((s) => <option key={s}>{s}</option>)}</select><label className="service-ledger-amount"><span>&#8369;</span><input type="number" value={line.amount} min="0" step="0.01" onChange={(e) => updateServiceLine(index, { amount: e.target.value })} /></label></div>)}</div><div className="service-ledger-total"><strong>Total</strong><strong>&#8369; {serviceLedgerTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div></div><div className="modal-actions"><button type="button" className="danger-btn" onClick={close}>Cancel</button><button type="button" className="success-btn" onClick={saveService}>Save</button></div></div></div> : null}
       {modal === 'dental-record' ? (
         <div className="pr-modal">
           <div className="pr-modal-head"><h2>Update Dental Records</h2><button type="button" onClick={close}>X</button></div>
