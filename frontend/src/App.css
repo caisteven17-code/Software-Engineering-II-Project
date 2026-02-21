@@ -234,6 +234,18 @@
   transform: translateY(0);
 }
 
+.submit:disabled {
+  background: #9fb4c0;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.submit:disabled:hover {
+  background: #9fb4c0;
+  transform: none;
+}
+
 .dashboard {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
@@ -516,6 +528,10 @@
   width: 100%;
 }
 
+.archive-records .search-box {
+  min-width: 420px;
+}
+
 .inline-field {
   display: inline-flex;
   align-items: center;
@@ -609,6 +625,16 @@
 .archive-table .table-head,
 .archive-table .table-row {
   grid-template-columns: 90px 1.4fr 70px 70px 140px 120px;
+}
+
+.archive-table-services .table-head,
+.archive-table-services .table-row {
+  grid-template-columns: 1.8fr 1.1fr 120px;
+}
+
+.archive-table-dental .table-head,
+.archive-table-dental .table-row {
+  grid-template-columns: 90px 1.6fr 1.1fr 120px;
 }
 
 .table-head {
@@ -844,6 +870,11 @@
   box-shadow: none;
 }
 
+.panel-tabs.add-patient-tabs .tab:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .panel-tabs.large {
   justify-content: center;
 }
@@ -933,6 +964,7 @@
 .required-asterisk {
   color: #d62828;
   font-weight: 700;
+  margin-left: 4px;
 }
 
 .required-label {
@@ -1169,21 +1201,26 @@
 .add-patient-footer {
   margin-top: 18px;
   margin-bottom: 12px;
+  gap: 30px;
 }
 
 .step-btn {
-  width: auto;
-  min-width: 92px;
+  width: 112px;
+  height: 38px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 6px;
-  padding: 8px 18px;
+  padding: 0 18px;
+  margin-top: 0;
   font-size: 13px;
   box-shadow: none;
 }
 
 .final-submit {
-  width: min(260px, 100%);
   background: #1eb25d;
-  border-radius: 8px;
+  border-radius: 6px;
   box-shadow: none;
 }
 
@@ -1445,6 +1482,121 @@
   inset: 0;
   background: rgba(11, 39, 54, 0.38);
   z-index: 40;
+}
+
+.nav-password-modal {
+  position: fixed;
+  z-index: 41;
+  width: min(560px, calc(100vw - 32px));
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #0d668c;
+  border-radius: 6px;
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28);
+}
+
+.nav-password-modal-head {
+  height: 62px;
+}
+
+.nav-password-modal-body {
+  background: #e7eef2;
+  margin: 0 10px 10px;
+  padding: 28px 24px 22px;
+  border-radius: 2px;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+}
+
+.nav-password-modal-body label {
+  font-size: 38px;
+  font-weight: 700;
+  color: #1b2b35;
+}
+
+.nav-password-modal-body input {
+  width: min(340px, 100%);
+  border: 1px solid #b6c4cd;
+  background: #fff;
+  border-radius: 2px;
+  padding: 8px 10px;
+  font-size: 26px;
+}
+
+.nav-password-error {
+  margin: 0;
+  color: #c42323;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.nav-password-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.nav-password-actions .danger-btn,
+.nav-password-actions .success-btn {
+  min-width: 110px;
+  padding: 8px 16px;
+}
+
+.add-submit-modal {
+  position: fixed;
+  z-index: 41;
+  width: min(500px, calc(100vw - 28px));
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: #0d668c;
+  border-radius: 6px;
+  box-shadow: 0 20px 46px rgba(0, 0, 0, 0.28);
+}
+
+.add-submit-modal-head {
+  padding: 12px 16px;
+  color: #fff;
+}
+
+.add-submit-modal-head h3 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.add-submit-modal-body {
+  background: #e7eef2;
+  margin: 0 10px 10px;
+  border-radius: 2px;
+  padding: 20px 16px 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.add-submit-modal-body p {
+  margin: 0;
+  font-size: 17px;
+  color: #2e4452;
+  text-align: center;
+}
+
+.add-submit-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.add-submit-actions.center {
+  justify-content: center;
+}
+
+.add-submit-actions .danger-btn,
+.add-submit-actions .success-btn {
+  min-width: 88px;
+  padding: 6px 12px;
+  font-size: 14px;
 }
 
 .record-modal {

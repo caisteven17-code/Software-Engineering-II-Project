@@ -69,19 +69,58 @@ const CHECKBOX_CONDITIONS = [
   'Others',
 ]
 
+const INITIAL_ALLERGEN_INFO = {
+  localAnesthetic: false,
+  penicillin: false,
+  sulfaDrugs: false,
+  latex: false,
+  aspirin: false,
+  others: false,
+  othersText: '',
+}
+
+const INITIAL_PATIENT_INFO = {
+  lastName: '',
+  firstName: '',
+  middleName: '',
+  suffix: '',
+  birthdate: '',
+  sex: '',
+  age: '',
+  nickname: '',
+  email: '',
+  civilStatus: '',
+  currentAddress: '',
+  mobileNumber: '',
+  occupation: '',
+  officeAddress: '',
+  guardianName: '',
+  guardianMobileNumber: '',
+  guardianOccupation: '',
+  guardianOfficeAddress: '',
+}
+
 function YesNoQuestion({ index, item, prefix, answerValue, noteValue, onAnswerChange, onNoteChange }) {
   const fieldName = `${prefix}-${index}`
-  const showFollowup = prefix === 'medical' ? answerValue === 'YES' : Boolean(item.note)
+  const showFollowup = answerValue === 'YES'
 
   return (
     <div className="yes-no-item">
-      <p>{item.text}</p>
+      <p>
+        <span className="required-label">
+          {item.text}
+          <span className="required-asterisk">*</span>
+        </span>
+      </p>
       <div className="yes-no-row">
         <label>
           <input
             type="radio"
             name={fieldName}
             checked={answerValue === 'YES'}
+            onClick={() => {
+              if (answerValue === 'YES') onAnswerChange?.('')
+            }}
             onChange={() => onAnswerChange?.('YES')}
           />
           Yes
@@ -91,6 +130,9 @@ function YesNoQuestion({ index, item, prefix, answerValue, noteValue, onAnswerCh
             type="radio"
             name={fieldName}
             checked={answerValue === 'NO'}
+            onClick={() => {
+              if (answerValue === 'NO') onAnswerChange?.('')
+            }}
             onChange={() => onAnswerChange?.('NO')}
           />
           No
@@ -108,37 +150,16 @@ function YesNoQuestion({ index, item, prefix, answerValue, noteValue, onAnswerCh
 
 function AddPatient() {
   const [activeStep, setActiveStep] = useState(0)
+  const [maxReachedStep, setMaxReachedStep] = useState(0)
   const [medicalAnswers, setMedicalAnswers] = useState({})
   const [medicalNotes, setMedicalNotes] = useState({})
-  const [allergenInfo, setAllergenInfo] = useState({
-    localAnesthetic: false,
-    penicillin: false,
-    sulfaDrugs: false,
-    latex: false,
-    aspirin: false,
-    others: false,
-    othersText: '',
-  })
-  const [patientInfo, setPatientInfo] = useState({
-    lastName: '',
-    firstName: '',
-    middleName: '',
-    suffix: '',
-    birthdate: '',
-    sex: '',
-    age: '',
-    nickname: '',
-    email: '',
-    civilStatus: '',
-    currentAddress: '',
-    mobileNumber: '',
-    occupation: '',
-    officeAddress: '',
-    guardianName: '',
-    guardianMobileNumber: '',
-    guardianOccupation: '',
-    guardianOfficeAddress: '',
-  })
+  const [dentalAnswers, setDentalAnswers] = useState({})
+  const [dentalNotes, setDentalNotes] = useState({})
+  const [authorizationAccepted, setAuthorizationAccepted] = useState(false)
+  const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = useState(false)
+  const [isSubmitSuccessOpen, setIsSubmitSuccessOpen] = useState(false)
+  const [allergenInfo, setAllergenInfo] = useState(INITIAL_ALLERGEN_INFO)
+  const [patientInfo, setPatientInfo] = useState(INITIAL_PATIENT_INFO)
 
   const isMinor = Number(patientInfo.age) > 0 && Number(patientInfo.age) < 18
 
@@ -165,9 +186,37 @@ function AddPatient() {
     return true
   }
 
+  const validateYesNoQuestions = (questions, answers, notes, label) => {
+    const hasMissingAnswer = questions.some((_, index) => !answers[index])
+    if (hasMissingAnswer) {
+      window.alert(`Please answer all questions under ${label} before proceeding.`)
+      return false
+    }
+
+    const hasMissingNote = questions.some((item, index) => item.note && answers[index] === 'YES' && `${notes[index] || ''}`.trim() === '')
+    if (hasMissingNote) {
+      window.alert(`Please complete all required follow-up details under ${label}.`)
+      return false
+    }
+    return true
+  }
+
   const nextStep = () => {
     if (activeStep === 0 && !validatePatientInformationStep()) return
-    setActiveStep((prev) => Math.min(prev + 1, STEPS.length - 1))
+    if (activeStep === 1 && !validateYesNoQuestions(MEDICAL_QUESTIONS, medicalAnswers, medicalNotes, 'Medical History')) return
+    if (activeStep === 2 && !validateYesNoQuestions(DENTAL_QUESTIONS, dentalAnswers, dentalNotes, 'Dental History')) return
+
+    const nextIndex = Math.min(activeStep + 1, STEPS.length - 1)
+    setActiveStep(nextIndex)
+    setMaxReachedStep((prev) => Math.max(prev, nextIndex))
+  }
+  const prevStep = () => {
+    setActiveStep((prev) => Math.max(prev - 1, 0))
+  }
+  const goToStep = (index) => {
+    if (index <= maxReachedStep) {
+      setActiveStep(index)
+    }
   }
   const toggleAllergen = (key) => {
     setAllergenInfo((prev) => {
@@ -175,6 +224,26 @@ function AddPatient() {
       if (key === 'others' && prev.others) next.othersText = ''
       return next
     })
+  }
+  const handleFinalSubmit = () => setIsSubmitConfirmOpen(true)
+  const confirmSubmission = () => {
+    setIsSubmitConfirmOpen(false)
+    setIsSubmitSuccessOpen(true)
+  }
+  const resetAddPatientForm = () => {
+    setActiveStep(0)
+    setMaxReachedStep(0)
+    setMedicalAnswers({})
+    setMedicalNotes({})
+    setDentalAnswers({})
+    setDentalNotes({})
+    setAuthorizationAccepted(false)
+    setAllergenInfo(INITIAL_ALLERGEN_INFO)
+    setPatientInfo(INITIAL_PATIENT_INFO)
+  }
+  const handleSuccessAcknowledge = () => {
+    setIsSubmitSuccessOpen(false)
+    resetAddPatientForm()
   }
 
   return (
@@ -190,7 +259,8 @@ function AddPatient() {
               key={step}
               type="button"
               className={`tab ${activeStep === index ? 'active' : ''}`}
-              onClick={() => setActiveStep(index)}
+              onClick={() => goToStep(index)}
+              disabled={index > maxReachedStep}
             >
               {step}
             </button>
@@ -220,7 +290,7 @@ function AddPatient() {
               </label>
               <label>
                 <span className="required-label">Birthdate<span className="required-asterisk">*</span></span>
-                <input type="text" required value={patientInfo.birthdate} onChange={(e) => setPatientInfo((p) => ({ ...p, birthdate: e.target.value }))} />
+                <input type="date" required value={patientInfo.birthdate} onChange={(e) => setPatientInfo((p) => ({ ...p, birthdate: e.target.value }))} />
               </label>
               <label>
                 <span className="required-label">Sex<span className="required-asterisk">*</span></span>
@@ -268,7 +338,7 @@ function AddPatient() {
                     <span className="required-label">Parent/Guardian Name<span className="required-asterisk">*</span></span>
                     <input type="text" required value={patientInfo.guardianName} onChange={(e) => setPatientInfo((p) => ({ ...p, guardianName: e.target.value }))} />
                   </label>
-                  <label>
+                  <label className="span-2">
                     <span className="required-label">Mobile Number<span className="required-asterisk">*</span></span>
                     <input type="text" required value={patientInfo.guardianMobileNumber} onChange={(e) => setPatientInfo((p) => ({ ...p, guardianMobileNumber: e.target.value }))} />
                   </label>
@@ -276,7 +346,7 @@ function AddPatient() {
                     <span className="required-label">Occupation<span className="required-asterisk">*</span></span>
                     <input type="text" required value={patientInfo.guardianOccupation} onChange={(e) => setPatientInfo((p) => ({ ...p, guardianOccupation: e.target.value }))} />
                   </label>
-                  <label className="span-2">
+                  <label className="span-3">
                     Office Address
                     <input type="text" value={patientInfo.guardianOfficeAddress} onChange={(e) => setPatientInfo((p) => ({ ...p, guardianOfficeAddress: e.target.value }))} />
                   </label>
@@ -373,7 +443,21 @@ function AddPatient() {
             <section className="history-block">
               <h3>Answer the Following Questions:</h3>
               {DENTAL_QUESTIONS.map((item, index) => (
-                <YesNoQuestion key={item.text} item={item} index={index} prefix="dental" />
+                <YesNoQuestion
+                  key={item.text}
+                  item={item}
+                  index={index}
+                  prefix="dental"
+                  answerValue={dentalAnswers[index]}
+                  noteValue={dentalNotes[index]}
+                  onAnswerChange={(value) => {
+                    setDentalAnswers((p) => ({ ...p, [index]: value }))
+                    if (value !== 'YES') {
+                      setDentalNotes((p) => ({ ...p, [index]: '' }))
+                    }
+                  }}
+                  onNoteChange={(value) => setDentalNotes((p) => ({ ...p, [index]: value }))}
+                />
               ))}
             </section>
           </div>
@@ -398,7 +482,15 @@ function AddPatient() {
                 practitioners.
               </p>
               <label className="agree-line">
-                <input type="radio" name="authorization" />
+                <input
+                  type="radio"
+                  name="authorization"
+                  checked={authorizationAccepted}
+                  onClick={() => {
+                    if (authorizationAccepted) setAuthorizationAccepted(false)
+                  }}
+                  onChange={() => setAuthorizationAccepted(true)}
+                />
                 I have read, understood, and <strong>agree</strong> to the terms stated above.
               </label>
             </div>
@@ -406,17 +498,57 @@ function AddPatient() {
         ) : null}
 
         <div className="panel-footer add-patient-footer">
+          {activeStep > 0 ? (
+            <button type="button" className="ghost step-btn" onClick={prevStep}>
+              Back
+            </button>
+          ) : null}
           {activeStep < STEPS.length - 1 ? (
             <button type="button" className="submit step-btn" onClick={nextStep}>
               Next
             </button>
           ) : (
-            <button type="button" className="submit final-submit">
+            <button type="button" className="submit step-btn final-submit" disabled={!authorizationAccepted} onClick={handleFinalSubmit}>
               Submit
             </button>
           )}
         </div>
       </section>
+
+      {isSubmitConfirmOpen ? (
+        <>
+          <div className="modal-backdrop" onClick={() => setIsSubmitConfirmOpen(false)} />
+          <div className="add-submit-modal">
+            <div className="add-submit-modal-head">
+              <h3>Confirm Submission</h3>
+            </div>
+            <div className="add-submit-modal-body">
+              <p>Are you sure you want to submit this patient record?</p>
+              <div className="add-submit-actions">
+                <button type="button" className="danger-btn" onClick={() => setIsSubmitConfirmOpen(false)}>Cancel</button>
+                <button type="button" className="success-btn" onClick={confirmSubmission}>Submit</button>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {isSubmitSuccessOpen ? (
+        <>
+          <div className="modal-backdrop" onClick={() => setIsSubmitSuccessOpen(false)} />
+          <div className="add-submit-modal">
+            <div className="add-submit-modal-head">
+              <h3>Success</h3>
+            </div>
+            <div className="add-submit-modal-body">
+              <p>Patient record submitted successfully.</p>
+              <div className="add-submit-actions center">
+                <button type="button" className="success-btn" onClick={handleSuccessAcknowledge}>OK</button>
+              </div>
+            </div>
+          </div>
+        </>
+      ) : null}
     </>
   )
 }

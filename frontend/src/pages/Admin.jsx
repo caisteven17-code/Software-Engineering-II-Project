@@ -5,6 +5,16 @@ const ARCHIVE_USERS = [
   { id: 11, name: 'Hanna Cruz', sex: 'F', age: 29, date: 'Mar 2, 2021' },
   { id: 12, name: 'Kenneth Dela Cruz', sex: 'M', age: 35, date: 'Sep 10, 2022' },
 ]
+const ARCHIVE_SERVICES = [
+  { id: 1, service: 'Pasta', date: 'Apr 25, 2017' },
+  { id: 2, service: 'Braces', date: 'Jul 25, 2023' },
+  { id: 3, service: 'Root Canal', date: 'Jan 3, 2024' },
+]
+const ARCHIVE_DENTAL_CONDITIONS = [
+  { id: 1, legend: 'ABR', condition: 'Abrasions', date: 'Apr 7, 2019' },
+  { id: 2, legend: 'X', condition: 'Missing', date: 'Nov 11, 2023' },
+  { id: 3, legend: 'I', condition: 'Impacted', date: 'Oct 10, 2025' },
+]
 
 function Admin() {
   const [tab, setTab] = useState('users')
@@ -13,6 +23,8 @@ function Admin() {
   const [inactivePatients, setInactivePatients] = useState(INACTIVE_PATIENTS)
   const [archivePatients, setArchivePatients] = useState(ARCHIVE_PATIENTS)
   const [archiveUsers, setArchiveUsers] = useState(ARCHIVE_USERS)
+  const [archiveServices, setArchiveServices] = useState(ARCHIVE_SERVICES)
+  const [archiveDentalConditions, setArchiveDentalConditions] = useState(ARCHIVE_DENTAL_CONDITIONS)
   const [archiveType, setArchiveType] = useState('patients')
   const [modal, setModal] = useState(null)
   const [selected, setSelected] = useState(null)
@@ -105,16 +117,30 @@ function Admin() {
       closeModal()
       return
     }
+    if (archiveType === 'users') {
+      setArchiveUsers((prev) => prev.filter((row) => row.id !== selected.id))
+      showSuccess('Retrieved successfully')
+      closeModal()
+      return
+    }
+    if (archiveType === 'services') {
+      setArchiveServices((prev) => prev.filter((row) => row.id !== selected.id))
+      showSuccess('Retrieved successfully')
+      closeModal()
+      return
+    }
 
-    setArchiveUsers((prev) => prev.filter((row) => row.id !== selected.id))
+    setArchiveDentalConditions((prev) => prev.filter((row) => row.id !== selected.id))
     showSuccess('Retrieved successfully')
     closeModal()
   }
 
-  const archiveRows = useMemo(
-    () => (archiveType === 'patients' ? archivePatients : archiveUsers),
-    [archiveType, archivePatients, archiveUsers],
-  )
+  const archiveRows = useMemo(() => {
+    if (archiveType === 'patients') return archivePatients
+    if (archiveType === 'users') return archiveUsers
+    if (archiveType === 'services') return archiveServices
+    return archiveDentalConditions
+  }, [archiveType, archivePatients, archiveUsers, archiveServices, archiveDentalConditions])
 
   return (
     <>
@@ -280,14 +306,23 @@ function Admin() {
         ) : null}
 
         {tab === 'archive' ? (
-          <div className="records">
+          <div className="records archive-records">
             <div className="records-header">
               <div>
                 <h2>Archive List</h2>
                 <div className="records-toolbar">
                   <div className="search-box">
                     <span className="search-icon" aria-hidden />
-                    <input type="text" placeholder="Search by name" />
+                    <input
+                      type="text"
+                      placeholder={
+                        archiveType === 'services'
+                          ? 'Search by services'
+                          : archiveType === 'dentalCondition'
+                            ? 'Search by Tooth Condition'
+                            : 'Search by name'
+                      }
+                    />
                   </div>
                 </div>
               </div>
@@ -296,6 +331,8 @@ function Admin() {
                   <select value={archiveType} onChange={(e) => setArchiveType(e.target.value)}>
                     <option value="patients">Patients</option>
                     <option value="users">Users</option>
+                    <option value="services">Services</option>
+                    <option value="dentalCondition">Dental Condition</option>
                   </select>
                 </div>
                 <div className="sorter">
@@ -305,24 +342,66 @@ function Admin() {
               </div>
             </div>
 
-            <div className="records-table archive-table">
+            <div
+              className={`records-table archive-table ${
+                archiveType === 'services' ? 'archive-table-services' : ''
+              } ${archiveType === 'dentalCondition' ? 'archive-table-dental' : ''}`}
+            >
               <div className="table-head">
-                <span>{archiveType === 'patients' ? 'Patient ID' : 'Staff ID'}</span>
-                <span>Full Name</span>
-                <span>Sex</span>
-                <span>Age</span>
-                <span>Archive Date</span>
-                <span>Action</span>
+                {archiveType === 'services' ? (
+                  <>
+                    <span>Service</span>
+                    <span>Archived date</span>
+                    <span>Action</span>
+                  </>
+                ) : null}
+                {archiveType === 'dentalCondition' ? (
+                  <>
+                    <span>Legend</span>
+                    <span>Tooth Condition</span>
+                    <span>Archived date</span>
+                    <span>Action</span>
+                  </>
+                ) : null}
+                {(archiveType === 'patients' || archiveType === 'users') ? (
+                  <>
+                    <span>{archiveType === 'patients' ? 'Patient ID' : 'Staff ID'}</span>
+                    <span>Full Name</span>
+                    <span>Sex</span>
+                    <span>Age</span>
+                    <span>Archive Date</span>
+                    <span>Action</span>
+                  </>
+                ) : null}
               </div>
               <div className="table-body">
                 {archiveRows.map((row) => (
                   <div key={row.id} className="table-row">
-                    <span>{row.id}</span>
-                    <span>{row.name}</span>
-                    <span>{row.sex}</span>
-                    <span>{row.age}</span>
-                    <span>{row.date}</span>
-                    <span><button type="button" className="view" onClick={() => openConfirmRetrieve(row)}>Retrieve</button></span>
+                    {archiveType === 'services' ? (
+                      <>
+                        <span>{row.service}</span>
+                        <span>{row.date}</span>
+                        <span><button type="button" className="view" onClick={() => openConfirmRetrieve(row)}>Retrieve</button></span>
+                      </>
+                    ) : null}
+                    {archiveType === 'dentalCondition' ? (
+                      <>
+                        <span>{row.legend}</span>
+                        <span>{row.condition}</span>
+                        <span>{row.date}</span>
+                        <span><button type="button" className="view" onClick={() => openConfirmRetrieve(row)}>Retrieve</button></span>
+                      </>
+                    ) : null}
+                    {(archiveType === 'patients' || archiveType === 'users') ? (
+                      <>
+                        <span>{row.id}</span>
+                        <span>{row.name}</span>
+                        <span>{row.sex}</span>
+                        <span>{row.age}</span>
+                        <span>{row.date}</span>
+                        <span><button type="button" className="view" onClick={() => openConfirmRetrieve(row)}>Retrieve</button></span>
+                      </>
+                    ) : null}
                   </div>
                 ))}
               </div>
@@ -388,7 +467,11 @@ function Admin() {
             <p>
               {archiveType === 'patients'
                 ? 'Are you sure you want to retrieve this patient?'
-                : 'Are you sure you want to retrieve this user?'}
+                : archiveType === 'users'
+                  ? 'Are you sure you want to retrieve this user?'
+                  : archiveType === 'services'
+                    ? 'Are you sure you want to retrieve this service?'
+                    : 'Are you sure you want to retrieve this dental condition?'}
             </p>
             <div className="modal-actions">
               <button type="button" className="danger-btn" onClick={closeModal}>No</button>
