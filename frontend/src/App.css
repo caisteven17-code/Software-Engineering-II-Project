@@ -578,7 +578,7 @@ body {
   border: 1px solid var(--border-soft);
   border-radius: 12px;
   padding: 10px 14px;
-  min-width: 230px;
+  min-width: 320px;
   min-height: 44px;
   background: var(--surface);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
@@ -612,10 +612,6 @@ body {
   background: transparent;
 }
 
-.archive-records .search-box {
-  min-width: 420px;
-}
-
 .inline-field {
   display: inline-flex;
   align-items: center;
@@ -636,6 +632,13 @@ body {
 }
 
 .records-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.dental-actions-group {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -704,78 +707,48 @@ body {
   border: 1px solid var(--border-strong);
   padding: 9px 12px;
   min-height: 42px;
+  height: 46px;
   background: var(--surface);
   color: var(--text-dark);
 }
 
 .sort-direction-btn {
-  min-width: 74px;
+  min-width: 66px;
+  min-height: 46px;
+  height: 46px;
   padding: 9px 12px;
-  font-size: 20px;
-  font-weight: 700;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
+  box-sizing: border-box;
 }
 
 .sort-direction-icon {
-  width: 100%;
+  width: auto;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
 }
 
-.sort-direction-arrow {
-  position: relative;
-  width: 14px;
-  height: 30px;
-  color: #0b2f44;
+.sort-direction-svg {
+  width: 28px;
+  height: 24px;
+  overflow: visible;
+}
+
+.sort-direction-glyph {
+  stroke: #0b2f44;
+  stroke-width: 2.8;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
   opacity: 0.28;
   transition: opacity 0.16s ease;
 }
 
-.sort-direction-arrow.active {
+.sort-direction-glyph.active {
   opacity: 1;
-}
-
-.sort-direction-arrow::before,
-.sort-direction-arrow::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
-.sort-direction-arrow::before {
-  width: 4px;
-  background: currentColor;
-  border-radius: 999px;
-}
-
-.sort-direction-arrow::after {
-  width: 12px;
-  height: 12px;
-  border-right: 4px solid currentColor;
-  border-top: 4px solid currentColor;
-}
-
-.sort-direction-arrow.up::before {
-  bottom: 0;
-  height: 20px;
-}
-
-.sort-direction-arrow.up::after {
-  top: 0;
-  transform: translateX(-50%) rotate(-45deg);
-}
-
-.sort-direction-arrow.down::before {
-  top: 0;
-  height: 20px;
-}
-
-.sort-direction-arrow.down::after {
-  bottom: 0;
-  transform: translateX(-50%) rotate(135deg);
 }
 
 .records-table {
@@ -1518,6 +1491,7 @@ body {
 .panel-footer {
   display: flex;
   justify-content: center;
+  gap: 16px;
   margin-top: 12px;
 }
 
@@ -4214,27 +4188,6 @@ body {
   padding: 8px 10px;
 }
 
-.pr-dental-modal-dentist {
-  margin-top: 12px;
-}
-
-.pr-dental-modal-dentist label {
-  display: grid;
-  gap: 4px;
-  width: min(230px, 100%);
-  font-size: 12px;
-  font-weight: 700;
-  color: #0d92be;
-}
-
-.pr-dental-modal-dentist select {
-  border: 1px solid #c7d4dc;
-  border-radius: 4px;
-  padding: 6px 8px;
-  background: #f8fbfd;
-  color: #4b5f6d;
-}
-
 .pr-dental-record-modal .modal-actions {
   margin-top: 18px;
 }
@@ -4681,13 +4634,17 @@ body {
 
 .success-modal {
   background: #237f42;
+  width: min(520px, calc(100vw - 32px));
 }
 
 .success-modal .pr-modal-body p {
-  font-size: 52px;
+  font-size: 24px;
+  line-height: 1.5;
   text-align: center;
-  margin: 28px 0 18px;
-  font-weight: 700;
+  margin: 20px 0 14px;
+  font-weight: 600;
+  color: #294254;
+  word-break: break-word;
 }
 
 .add-user-card {

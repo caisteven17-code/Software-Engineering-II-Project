@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import SortDirectionIcon from '../components/SortDirectionIcon'
 import { supabase } from '../lib/supabaseClient'
 
 const DEFAULT_PAGE_SIZE = 10
@@ -306,34 +307,6 @@ function Admin() {
       return
     }
 
-    let addUserSuccessMessage = 'Added successfully.'
-    try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const accessToken = sessionData?.session?.access_token || ''
-      if (accessToken) {
-        const response = await fetch('/api/auth/admin-send-user-welcome-email', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({ email }),
-        })
-        const payload = await response.json().catch(() => ({}))
-
-        if (response.ok) {
-          addUserSuccessMessage = 'Added successfully. Welcome email sent.'
-        } else {
-          const reason = payload?.error || 'unknown reason'
-          addUserSuccessMessage = `Added successfully, but welcome email was not sent (${reason}).`
-        }
-      } else {
-        addUserSuccessMessage = 'Added successfully, but welcome email was not sent.'
-      }
-    } catch {
-      addUserSuccessMessage = 'Added successfully, but welcome email was not sent.'
-    }
-
     setShowAddUser(false)
     setInvalidAddUserFields({})
     setAddUserValidationMessage('')
@@ -347,7 +320,7 @@ function Admin() {
       is_active: true,
     })
     await loadAll()
-    showSuccess(addUserSuccessMessage)
+    showSuccess('Added successfully.')
   }
 
   const sendWelcomeEmailTest = async () => {
@@ -985,34 +958,17 @@ function Admin() {
                       setUsersPageInput('1')
                     }}
                   >
-                    <span className="sort-direction-icon" aria-hidden="true">
-                      <span
-                        className={`sort-direction-arrow up ${
-                          (usersSortBy === 'created'
-                            ? usersCreatedSortDirection
-                            : usersSortBy === 'staffId'
-                              ? usersStaffIdSortDirection
-                              : usersSortBy === 'role'
-                                ? usersRoleSortDirection
-                                : usersNameSortDirection) === 'asc'
-                            ? 'active'
-                            : ''
-                        }`}
-                      />
-                      <span
-                        className={`sort-direction-arrow down ${
-                          (usersSortBy === 'created'
-                            ? usersCreatedSortDirection
-                            : usersSortBy === 'staffId'
-                              ? usersStaffIdSortDirection
-                              : usersSortBy === 'role'
-                                ? usersRoleSortDirection
-                                : usersNameSortDirection) === 'desc'
-                            ? 'active'
-                            : ''
-                        }`}
-                      />
-                    </span>
+                    <SortDirectionIcon
+                      direction={
+                        (usersSortBy === 'created'
+                          ? usersCreatedSortDirection
+                          : usersSortBy === 'staffId'
+                            ? usersStaffIdSortDirection
+                            : usersSortBy === 'role'
+                              ? usersRoleSortDirection
+                              : usersNameSortDirection)
+                      }
+                    />
                   </button>
                 </div>
                 <button type="button" className="primary" onClick={() => setShowAddUser(true)}>Add User</button>
@@ -1122,9 +1078,6 @@ function Admin() {
                 }}>{ROLE_OPTIONS.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}</select></label>
               </div>
               <div className="panel-footer">
-                <button type="button" className="ghost wide" onClick={() => { void sendWelcomeEmailTest() }} disabled={isTestingWelcomeEmail}>
-                  {isTestingWelcomeEmail ? 'Sending...' : 'Test Email'}
-                </button>
                 <button type="submit" className="primary wide">Add</button>
               </div>
             </form>
@@ -1184,30 +1137,15 @@ function Admin() {
                       setInactivePageInput('1')
                     }}
                   >
-                    <span className="sort-direction-icon" aria-hidden="true">
-                      <span
-                        className={`sort-direction-arrow up ${
-                          (inactiveSortBy === 'inactiveDate'
-                            ? inactiveDateSortDirection
-                            : inactiveSortBy === 'patientId'
-                              ? inactivePatientIdSortDirection
-                              : inactiveNameSortDirection) === 'asc'
-                            ? 'active'
-                            : ''
-                        }`}
-                      />
-                      <span
-                        className={`sort-direction-arrow down ${
-                          (inactiveSortBy === 'inactiveDate'
-                            ? inactiveDateSortDirection
-                            : inactiveSortBy === 'patientId'
-                              ? inactivePatientIdSortDirection
-                              : inactiveNameSortDirection) === 'desc'
-                            ? 'active'
-                            : ''
-                        }`}
-                      />
-                    </span>
+                    <SortDirectionIcon
+                      direction={
+                        (inactiveSortBy === 'inactiveDate'
+                          ? inactiveDateSortDirection
+                          : inactiveSortBy === 'patientId'
+                            ? inactivePatientIdSortDirection
+                            : inactiveNameSortDirection)
+                      }
+                    />
                   </button>
                 </div>
               </div>
@@ -1304,30 +1242,15 @@ function Admin() {
                       setArchivePageInput('1')
                     }}
                   >
-                    <span className="sort-direction-icon" aria-hidden="true">
-                      <span
-                        className={`sort-direction-arrow up ${
-                          (archiveSortBy === 'archiveDate'
-                            ? archiveDateSortDirection
-                            : (archiveSortBy === 'patientId' || archiveSortBy === 'staffId')
-                              ? archiveIdSortDirection
-                              : archiveNameSortDirection) === 'asc'
-                            ? 'active'
-                            : ''
-                        }`}
-                      />
-                      <span
-                        className={`sort-direction-arrow down ${
-                          (archiveSortBy === 'archiveDate'
-                            ? archiveDateSortDirection
-                            : (archiveSortBy === 'patientId' || archiveSortBy === 'staffId')
-                              ? archiveIdSortDirection
-                              : archiveNameSortDirection) === 'desc'
-                            ? 'active'
-                            : ''
-                        }`}
-                      />
-                    </span>
+                    <SortDirectionIcon
+                      direction={
+                        (archiveSortBy === 'archiveDate'
+                          ? archiveDateSortDirection
+                          : (archiveSortBy === 'patientId' || archiveSortBy === 'staffId')
+                            ? archiveIdSortDirection
+                            : archiveNameSortDirection)
+                      }
+                    />
                   </button>
                 </div>
                 <div className="sorter inline">

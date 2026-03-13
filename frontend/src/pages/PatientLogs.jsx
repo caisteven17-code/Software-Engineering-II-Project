@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import SortDirectionIcon from '../components/SortDirectionIcon'
 import { supabase } from '../lib/supabaseClient'
 
 const DEFAULT_PAGE_SIZE = 10
@@ -148,20 +149,24 @@ function PatientLogs() {
                   }}
                 />
               </label>
-              <label className="inline-field">
-                Sort By:
-                <select
-                  value={sortOrder}
-                  onChange={(event) => {
-                    setSortOrder(event.target.value)
+              <div className="sorter inline">
+                <label htmlFor="logs-sort">Sort By:</label>
+                <select id="logs-sort" value="date" onChange={() => {}}>
+                  <option value="date">Date</option>
+                </select>
+                <button
+                  type="button"
+                  className="ghost sort-direction-btn"
+                  aria-label="Toggle sort direction"
+                  onClick={() => {
+                    setSortOrder((previous) => (previous === 'asc' ? 'desc' : 'asc'))
                     setCurrentPage(1)
                     setPageInput('1')
                   }}
                 >
-                  <option value="asc">Date ▲</option>
-                  <option value="desc">Date ▼</option>
-                </select>
-              </label>
+                  <SortDirectionIcon direction={sortOrder} />
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -180,83 +185,83 @@ function PatientLogs() {
 
           return (
             <>
-        <div className="records-table logs-table">
-          <div className="table-head">
-            <span>Patient ID</span>
-            <span>Patient Name</span>
-            <span>Date &amp; time</span>
-            <span>Assigned dentist</span>
-          </div>
-          <div className="table-body">
-            {pagedLogs.map((row) => (
-              <div key={row.id} className="table-row">
-                <span>{formatPatientCode(row.patient_code, row.patient_id)}</span>
-                <span>{row.patient_name}</span>
-                <span>{formatDateTime(row.logged_at)}</span>
-                <span>{row.actor_name}</span>
-              </div>
-            ))}
-            {!loading && filteredLogs.length === 0 ? <p>No logs found.</p> : null}
-          </div>
-        </div>
-
-        <div className="records-footer">
-          <span>Showing {visibleStart}-{visibleEnd} of {filteredLogs.length} entries</span>
-          <div className="pagination">
-            <div className="pagination-group pagination-size-group">
-              <label className="page-size-control">
-                Rows
-                <select
-                  value={rowsPerPage}
-                  onChange={(event) => {
-                    const nextPageSize = Number(event.target.value)
-                    setRowsPerPage(nextPageSize)
-                    setCurrentPage(1)
-                    setPageInput('1')
-                  }}
-                >
-                  {ROWS_PER_PAGE_OPTIONS.map((size) => (
-                    <option key={size} value={size}>{size}</option>
+              <div className="records-table logs-table">
+                <div className="table-head">
+                  <span>Patient ID</span>
+                  <span>Patient Name</span>
+                  <span>Date &amp; time</span>
+                  <span>Assigned dentist</span>
+                </div>
+                <div className="table-body">
+                  {pagedLogs.map((row) => (
+                    <div key={row.id} className="table-row">
+                      <span>{formatPatientCode(row.patient_code, row.patient_id)}</span>
+                      <span>{row.patient_name}</span>
+                      <span>{formatDateTime(row.logged_at)}</span>
+                      <span>{row.actor_name}</span>
+                    </div>
                   ))}
-                </select>
-              </label>
-            </div>
-            <div className="pagination-group pagination-nav-group">
-              <button type="button" disabled={safePage <= 1} onClick={() => { const nextPage = Math.max(1, safePage - 1); setCurrentPage(nextPage); setPageInput(`${nextPage}`) }}>Previous</button>
-              {pageItems.map((item) => (
-                typeof item === 'number'
-                  ? (
-                    <button key={item} type="button" className={item === safePage ? 'active' : ''} onClick={() => { setCurrentPage(item); setPageInput(`${item}`) }}>
-                      {item}
-                    </button>
-                  )
-                  : <span key={item} className="pagination-ellipsis">...</span>
-              ))}
-              <button type="button" disabled={safePage >= totalPages} onClick={() => { const nextPage = Math.min(totalPages, safePage + 1); setCurrentPage(nextPage); setPageInput(`${nextPage}`) }}>Next</button>
-            </div>
-            <div className="pagination-group pagination-jump-group">
-              <form
-                className="page-jump-form"
-                onSubmit={(event) => {
-                  event.preventDefault()
-                  handlePageJump(totalPages)
-                }}
-              >
-                <label>
-                  Page
-                  <input
-                    type="number"
-                    min="1"
-                    max={totalPages}
-                    value={pageInput}
-                    onChange={(event) => setPageInput(event.target.value)}
-                  />
-                </label>
-                <button type="submit">Go</button>
-              </form>
-            </div>
-          </div>
-        </div>
+                  {!loading && filteredLogs.length === 0 ? <p>No logs found.</p> : null}
+                </div>
+              </div>
+
+              <div className="records-footer">
+                <span>Showing {visibleStart}-{visibleEnd} of {filteredLogs.length} entries</span>
+                <div className="pagination">
+                  <div className="pagination-group pagination-size-group">
+                    <label className="page-size-control">
+                      Rows
+                      <select
+                        value={rowsPerPage}
+                        onChange={(event) => {
+                          const nextPageSize = Number(event.target.value)
+                          setRowsPerPage(nextPageSize)
+                          setCurrentPage(1)
+                          setPageInput('1')
+                        }}
+                      >
+                        {ROWS_PER_PAGE_OPTIONS.map((size) => (
+                          <option key={size} value={size}>{size}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <div className="pagination-group pagination-nav-group">
+                    <button type="button" disabled={safePage <= 1} onClick={() => { const nextPage = Math.max(1, safePage - 1); setCurrentPage(nextPage); setPageInput(`${nextPage}`) }}>Previous</button>
+                    {pageItems.map((item) => (
+                      typeof item === 'number'
+                        ? (
+                          <button key={item} type="button" className={item === safePage ? 'active' : ''} onClick={() => { setCurrentPage(item); setPageInput(`${item}`) }}>
+                            {item}
+                          </button>
+                        )
+                        : <span key={item} className="pagination-ellipsis">...</span>
+                    ))}
+                    <button type="button" disabled={safePage >= totalPages} onClick={() => { const nextPage = Math.min(totalPages, safePage + 1); setCurrentPage(nextPage); setPageInput(`${nextPage}`) }}>Next</button>
+                  </div>
+                  <div className="pagination-group pagination-jump-group">
+                    <form
+                      className="page-jump-form"
+                      onSubmit={(event) => {
+                        event.preventDefault()
+                        handlePageJump(totalPages)
+                      }}
+                    >
+                      <label>
+                        Page
+                        <input
+                          type="number"
+                          min="1"
+                          max={totalPages}
+                          value={pageInput}
+                          onChange={(event) => setPageInput(event.target.value)}
+                        />
+                      </label>
+                      <button type="submit">Go</button>
+                    </form>
+                  </div>
+                </div>
+              </div>
             </>
           )
         })()}

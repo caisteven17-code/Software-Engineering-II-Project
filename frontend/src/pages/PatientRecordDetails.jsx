@@ -77,7 +77,6 @@ const MQ = [
 
 const PERIODONTAL = ['Gingivitis', 'Moderate Periodontitis', 'Early Periodontitis', 'Advanced Periodontitis']
 const OCCLUSION = ['Class I molar', 'Overbite', 'Overjet', 'Midline Deviation']
-const DEFAULT_DENTIST = 'Dr. Jowela Elaine Roxas'
 const ACCEPTED_DOCUMENT_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.pdf', '.docx', '.txt', '.csv']
 const ACCEPTED_DOCUMENT_MIME_TYPES = new Set([
   'image/png',
@@ -141,7 +140,6 @@ const DEFAULT_DENTAL_RECORD = {
   occlusion: createBooleanMap(OCCLUSION),
   prescriptions: '',
   notes: '',
-  dentist: DEFAULT_DENTIST,
 }
 
 const cloneDentalRecord = (record) => ({
@@ -150,7 +148,6 @@ const cloneDentalRecord = (record) => ({
   occlusion: { ...record.occlusion },
   prescriptions: record.prescriptions,
   notes: record.notes,
-  dentist: record.dentist,
 })
 
 const initialPatient = () => ({
@@ -338,15 +335,7 @@ const normalizeDentalRecord = (raw) => ({
   occlusion: Object.fromEntries(OCCLUSION.map((item) => [item, Boolean(raw?.occlusion?.[item])])),
   prescriptions: raw?.prescriptions ?? '',
   notes: raw?.notes ?? '',
-  dentist: raw?.dentist ?? DEFAULT_DENTIST,
 })
-
-const formatDentistDisplayName = (value) => {
-  const raw = `${value ?? ''}`.trim()
-  if (!raw) return ''
-  if (/^dr\.?\s/i.test(raw)) return raw.replace(/^dr\.?\s*/i, 'Dr. ')
-  return `Dr. ${raw}`
-}
 
 const toMoney = (value) => {
   const amount = Number(value)
@@ -485,7 +474,6 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
   const [lastChangedBy, setLastChangedBy] = useState('-')
   const [legendOptions, setLegendOptions] = useState([])
   const [serviceOptions, setServiceOptions] = useState([])
-  const [dentistOptions, setDentistOptions] = useState([DEFAULT_DENTIST])
   const [serviceRows, setServiceRows] = useState([])
   const [selectedService, setSelectedService] = useState(null)
   const [patientDocuments, setPatientDocuments] = useState([])
@@ -493,6 +481,8 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
   const [serviceFormError, setServiceFormError] = useState('')
   const [serviceForm, setServiceForm] = useState(() => initialServiceForm())
   const [isServiceSaveConfirmOpen, setIsServiceSaveConfirmOpen] = useState(false)
+  const [dentalRecordHistory, setDentalRecordHistory] = useState([])
+  const [selectedDentalRecordId, setSelectedDentalRecordId] = useState('')
   const [dentalRecord, setDentalRecord] = useState(() => cloneDentalRecord(DEFAULT_DENTAL_RECORD))
   const [dentalRecordForm, setDentalRecordForm] = useState(() => cloneDentalRecord(DEFAULT_DENTAL_RECORD))
   const [dentalRecordMeta, setDentalRecordMeta] = useState({ updatedAt: '', updatedByName: '-' })
@@ -504,10 +494,6 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
   const lastExamPickerRef = useRef(null)
 
   const patientCode = useMemo(() => formatPatientCode(patient.code, patient.dbId), [patient.code, patient.dbId])
-  const availableDentists = useMemo(
-    () => [...new Set([DEFAULT_DENTIST, ...dentistOptions, dentalRecord.dentist, dentalRecordForm.dentist].filter(Boolean))],
-    [dentalRecord.dentist, dentalRecordForm.dentist, dentistOptions],
-  )
   const defaultLegendCode = useMemo(() => {
     const goodConditionLegend = legendOptions.find((legend) => `${legend.condition_name ?? ''}`.trim().toLowerCase() === 'good condition')
     return goodConditionLegend?.code || legendOptions[0]?.code || '?'
@@ -520,6 +506,10 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
     ].filter(Boolean)
     return [...new Set([defaultLegendCode, ...liveCodes, ...persistedCodes].filter(Boolean))]
   }, [defaultLegendCode, dentalRecord, dentalRecordForm, legendOptions])
+  const selectedDentalRecordEntry = useMemo(() => {
+    if (!dentalRecordHistory.length) return null
+    return dentalRecordHistory.find((entry) => entry.id === selectedDentalRecordId) ?? dentalRecordHistory[0]
+  }, [dentalRecordHistory, selectedDentalRecordId])
 
   const takeSnapshot = useCallback(() => {
     setPatientSnapshot({
@@ -552,10 +542,23 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
     const ids = [...new Set((userIds ?? []).filter(Boolean))]
     if (!ids.length) return {}
 
-    const { data, error: fetchError } = await supabase
-      .from('staff_profiles')
-      .select('user_id, full_name')
-      .in('user_id', ids)
+    let data = null
+    let fetchError = null
+
+    const rpcResult = await supabase.rpc('lookup_staff_names', { p_user_ids: ids })
+    data = rpcResult.data
+    fetchError = rpcResult.error
+
+    // Fallback for environments where the helper RPC has not been applied yet.
+    if (fetchError) {
+      const fallbackResult = await supabase
+        .from('staff_profiles')
+        .select('user_id, full_name')
+        .in('user_id', ids)
+
+      data = fallbackResult.data
+      fetchError = fallbackResult.error
+    }
 
     if (fetchError) return {}
 
@@ -694,23 +697,6 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
       ...service,
       price: Number(service.price ?? 0),
     })))
-  }, [])
-
-  const loadDentistOptions = useCallback(async () => {
-    const { data, error: fetchError } = await supabase
-      .from('staff_profiles')
-      .select('full_name')
-      .eq('is_active', true)
-      .eq('role', 'associate_dentist')
-      .order('full_name', { ascending: true })
-
-    if (fetchError) throw fetchError
-
-    const dynamicDentists = (data ?? [])
-      .map((row) => formatDentistDisplayName(row.full_name))
-      .filter(Boolean)
-
-    setDentistOptions([...new Set([DEFAULT_DENTIST, ...dynamicDentists])])
   }, [])
 
   const loadLegendOptions = useCallback(async () => {
@@ -865,28 +851,45 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
       .eq('patient_id', id)
       .is('archived_at', null)
       .order('recorded_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
+      
 
     if (fetchError) throw fetchError
 
-    if (!data) {
+    const rows = data ?? []
+    if (!rows.length) {
+      setDentalRecordHistory([])
+      setSelectedDentalRecordId('')
       setDentalRecord(cloneDentalRecord(DEFAULT_DENTAL_RECORD))
       setDentalRecordForm(cloneDentalRecord(DEFAULT_DENTAL_RECORD))
       setDentalRecordMeta({ updatedAt: '', updatedByName: '-' })
       return
     }
 
-    const mappedRecord = normalizeDentalRecord({
-      ...(data.chart_data ?? {}),
-      notes: data.findings ?? data.chart_data?.notes ?? '',
-      prescriptions: data.treatment ?? data.chart_data?.prescriptions ?? '',
+    const staffMap = await fetchStaffNames(rows.map((row) => row.updated_by))
+    const latestByDate = new Map()
+
+    rows.forEach((row) => {
+      const dateKey = `${row.recorded_at ?? ''}`.slice(0, 10)
+      if (!dateKey || latestByDate.has(dateKey)) return
+
+      latestByDate.set(dateKey, {
+        id: row.id,
+        recordedAt: row.recorded_at,
+        updatedByName: staffMap[row.updated_by] || 'System',
+        record: normalizeDentalRecord({
+          ...(row.chart_data ?? {}),
+          notes: row.findings ?? row.chart_data?.notes ?? '',
+          prescriptions: row.treatment ?? row.chart_data?.prescriptions ?? '',
+        }),
+      })
     })
 
-    const staffMap = await fetchStaffNames([data.updated_by])
-    setDentalRecord(cloneDentalRecord(mappedRecord))
-    setDentalRecordForm(cloneDentalRecord(mappedRecord))
-    setDentalRecordMeta({ updatedAt: data.recorded_at, updatedByName: staffMap[data.updated_by] || 'System' })
+    const nextHistory = [...latestByDate.values()]
+
+    setDentalRecordHistory(nextHistory)
+    setSelectedDentalRecordId((previous) => (
+      previous && nextHistory.some((entry) => entry.id === previous) ? previous : nextHistory[0].id
+    ))
   }, [fetchStaffNames, id])
 
   const loadAll = useCallback(async () => {
@@ -905,7 +908,6 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
       // Load secondary data in the background (no blocking spinner).
       void Promise.all([
         loadServiceOptions(),
-        loadDentistOptions(),
         loadLegendOptions(),
         loadPatientDocuments(),
       ]).catch((fetchError) => {
@@ -915,7 +917,7 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
       setError(normalizeError(fetchError, 'Unable to load patient data.'))
       setLoading(false)
     }
-  }, [loadDentalRecord, loadDentistOptions, loadLegendOptions, loadPatient, loadPatientDocuments, loadServiceOptions, loadServiceRows])
+  }, [loadDentalRecord, loadLegendOptions, loadPatient, loadPatientDocuments, loadServiceOptions, loadServiceRows])
 
   useEffect(() => {
     void loadAll()
@@ -934,6 +936,22 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
       return { ...previous, toothMap: nextToothMap }
     })
   }, [defaultLegendCode, legendCodes])
+
+  useEffect(() => {
+    if (!selectedDentalRecordEntry) {
+      setDentalRecord(cloneDentalRecord(DEFAULT_DENTAL_RECORD))
+      setDentalRecordForm(cloneDentalRecord(DEFAULT_DENTAL_RECORD))
+      setDentalRecordMeta({ updatedAt: '', updatedByName: '-' })
+      return
+    }
+
+    setDentalRecord(cloneDentalRecord(selectedDentalRecordEntry.record))
+    setDentalRecordForm(cloneDentalRecord(selectedDentalRecordEntry.record))
+    setDentalRecordMeta({
+      updatedAt: selectedDentalRecordEntry.recordedAt,
+      updatedByName: selectedDentalRecordEntry.updatedByName,
+    })
+  }, [selectedDentalRecordEntry])
 
   useEffect(() => {
     setBirthdateInput(formatDateInputDisplay(patient.birthdate))
@@ -1420,6 +1438,13 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
   }
 
   const requestServiceSave = () => {
+    const hasDentalRecordForDate = dentalRecordHistory.some((entry) => `${entry.recordedAt ?? ''}`.slice(0, 10) === serviceForm.date)
+
+    if (!hasDentalRecordForDate) {
+      setServiceFormError('Update the dental history for this date before adding a service record.')
+      return
+    }
+
     setModal(null)
     setIsServiceSaveConfirmOpen(true)
   }
@@ -1459,7 +1484,6 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
           occlusion: dentalRecordForm.occlusion,
           prescriptions: dentalRecordForm.prescriptions,
           notes: dentalRecordForm.notes,
-          dentist: dentalRecordForm.dentist,
         },
         recorded_at: new Date().toISOString(),
         created_by: actorId,
@@ -1757,7 +1781,7 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
   <div class="grid">
     <div class="field"><strong>Periodontal:</strong> ${escapeHtml(periodontalChecked)}</div>
     <div class="field"><strong>Occlusion:</strong> ${escapeHtml(occlusionChecked)}</div>
-    <div class="field"><strong>Dentist:</strong> ${escapeHtml(dentalRecord.dentist || '-')}</div>
+    <div class="field"><strong>Dentist:</strong> ${escapeHtml(dentalRecordMeta.updatedByName || '-')}</div>
     <div class="field"><strong>Tooth Conditions:</strong> ${escapeHtml(toothEntries)}</div>
     <div class="field"><strong>Prescriptions:</strong> ${escapeHtml(dentalRecord.prescriptions || '-')}</div>
     <div class="field"><strong>Notes:</strong> ${escapeHtml(dentalRecord.notes || '-')}</div>
@@ -1896,19 +1920,37 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
         <div className={`actions-row ${tab === 'service' ? 'service-actions-row' : ''}`}>
           {tab === 'patient' ? <button type="button" className="view" onClick={handleExport}>Export</button> : null}
           {tab === 'dental' ? (
-            <button
-              type="button"
-              className="primary"
-              onClick={() => {
-                void loadLegendOptions()
-                setDentalRecordForm(cloneDentalRecord(dentalRecord))
-                setModal('dental-record')
-              }}
-              disabled={currentRole === 'receptionist'}
-              title={currentRole === 'receptionist' ? 'Receptionist cannot update dental records.' : 'Update dental record'}
-            >
-              + Update Dental Record
-            </button>
+            <div className="dental-actions-group">
+              <label className="inline-field" htmlFor="dental-record-history">
+                History:
+                <select
+                  id="dental-record-history"
+                  value={selectedDentalRecordEntry?.id ?? ''}
+                  onChange={(event) => setSelectedDentalRecordId(event.target.value)}
+                  disabled={dentalRecordHistory.length === 0}
+                >
+                  {dentalRecordHistory.length === 0 ? <option value="">No history yet</option> : null}
+                  {dentalRecordHistory.map((entry) => (
+                    <option key={entry.id} value={entry.id}>
+                      {formatDateOnly(entry.recordedAt)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {currentRole !== 'receptionist' ? (
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={() => {
+                    void loadLegendOptions()
+                    setDentalRecordForm(cloneDentalRecord(dentalRecord))
+                    setModal('dental-record')
+                  }}
+                >
+                  + Update Dental Record
+                </button>
+              ) : null}
+            </div>
           ) : null}
           {tab === 'service' ? <button type="button" className="primary add-service-btn" onClick={() => openServiceEdit()}>+ Add Service Record</button> : null}
         </div>
@@ -2051,7 +2093,7 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
               <article className="pr-screen-card"><h4>Periodontal Screening</h4><div className="pr-option-grid">{PERIODONTAL.map((item) => <label key={item}><input type="checkbox" checked={dentalRecord.periodontal[item]} readOnly />{item}</label>)}</div></article>
               <article className="pr-screen-card"><h4>Occlusion</h4><div className="pr-option-grid">{OCCLUSION.map((item) => <label key={item}><input type="checkbox" checked={dentalRecord.occlusion[item]} readOnly />{item}</label>)}</div></article>
             </div>
-            <div className="pr-dentist-tag"><strong>Dentist:</strong> <span className="pr-dentist-name">{dentalRecord.dentist}</span></div>
+            <div className="pr-dentist-tag"><strong>Dentist:</strong> <span className="pr-dentist-name">{dentalRecordMeta.updatedByName}</span></div>
             <section className="pr-dental-history-wrap">
               <h3>Dental History</h3>
               <div className="pr-dental-chart">{renderDentalSection(DENTAL_CHART_IMAGES[0], 1, 'chart-1', TOOTH_X_POSITIONS_BY_CHART.chart1, dentalRecord.toothMap, () => {}, true)}<div className="pr-dental-divider" />{renderDentalSection(DENTAL_CHART_IMAGES[1], 17, 'chart-2', TOOTH_X_POSITIONS_BY_CHART.chart2, dentalRecord.toothMap, () => {}, true)}</div>
@@ -2385,7 +2427,6 @@ function PatientRecordDetails({ currentRole, currentProfile }) {
 
             <div className="pr-modal-section-title">Fill the Details</div>
             <div className="pr-dental-modal-notes"><label>Dental Prescriptions<textarea value={dentalRecordForm.prescriptions} onChange={(event) => setDentalRecordForm((previous) => ({ ...previous, prescriptions: event.target.value }))} /></label><label>Dental Notes<textarea value={dentalRecordForm.notes} onChange={(event) => setDentalRecordForm((previous) => ({ ...previous, notes: event.target.value }))} /></label></div>
-            <div className="pr-dental-modal-dentist"><label>Add Dentist<select value={dentalRecordForm.dentist} onChange={(event) => setDentalRecordForm((previous) => ({ ...previous, dentist: event.target.value }))}>{availableDentists.map((dentist) => <option key={dentist} value={dentist}>{dentist}</option>)}</select></label></div>
             <div className="modal-actions center"><button type="button" className="danger-btn" onClick={close}>Cancel</button><button type="button" className="success-btn" onClick={() => { void saveDentalRecord() }} disabled={isSaving || currentRole === 'receptionist'}>Save</button></div>
           </div>
         </div>

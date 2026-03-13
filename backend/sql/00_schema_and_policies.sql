@@ -540,15 +540,43 @@ as $$
     p.patient_code,
     concat_ws(', ', p.last_name, p.first_name) as patient_name,
     pl.created_at as logged_at,
-    coalesce(sp.full_name, 'System') as actor_name,
+    coalesce(dentist_sp.full_name, 'System') as actor_name,
     pl.action::text as action,
     pl.details
   from public.patient_logs pl
   join public.patients p on p.id = pl.patient_id
-  left join public.staff_profiles sp on sp.user_id = pl.created_by
+  left join lateral (
+    select
+      dr.updated_by,
+      dr.created_by
+    from public.dental_records dr
+    where dr.patient_id = pl.patient_id
+      and dr.archived_at is null
+    order by dr.recorded_at desc, dr.created_at desc
+    limit 1
+  ) latest_dr on true
+  left join public.staff_profiles dentist_sp
+    on dentist_sp.user_id = coalesce(latest_dr.updated_by, latest_dr.created_by)
   where public.is_active_staff()
     and pl.action = 'service_update'::public.patient_log_action
   order by pl.created_at desc;
+$$;
+
+create or replace function public.lookup_staff_names(p_user_ids uuid[])
+returns table (
+  user_id uuid,
+  full_name text
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select
+    sp.user_id,
+    sp.full_name
+  from public.staff_profiles sp
+  where sp.user_id = any(coalesce(p_user_ids, array[]::uuid[]));
 $$;
 
 create or replace function public.admin_create_user(
@@ -1129,6 +1157,7 @@ grant execute on function public.allowed_navigation() to authenticated;
 grant execute on function public.current_staff_role() to authenticated;
 grant execute on function public.is_active_staff() to authenticated;
 grant execute on function public.has_staff_role(public.staff_role) to authenticated;
+grant execute on function public.lookup_staff_names(uuid[]) to authenticated;
 grant execute on function public.resolve_login_email(text) to anon;
 grant execute on function public.resolve_login_email(text) to authenticated;
 grant execute on function public.list_patient_logs() to authenticated;

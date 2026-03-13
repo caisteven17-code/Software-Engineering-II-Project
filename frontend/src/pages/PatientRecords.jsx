@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import SortDirectionIcon from '../components/SortDirectionIcon'
 import { supabase } from '../lib/supabaseClient'
 
 const DEFAULT_PAGE_SIZE = 10
@@ -280,30 +281,15 @@ function PatientRecords() {
                   setPageInput('1')
                 }}
               >
-                <span className="sort-direction-icon" aria-hidden="true">
-                  <span
-                    className={`sort-direction-arrow up ${
-                      (sortBy === 'registered'
-                        ? registeredSortDirection
-                        : sortBy === 'patientId'
-                          ? patientIdSortDirection
-                          : nameSortDirection) === 'asc'
-                        ? 'active'
-                        : ''
-                    }`}
-                  />
-                  <span
-                    className={`sort-direction-arrow down ${
-                      (sortBy === 'registered'
-                        ? registeredSortDirection
-                        : sortBy === 'patientId'
-                          ? patientIdSortDirection
-                          : nameSortDirection) === 'desc'
-                        ? 'active'
-                        : ''
-                    }`}
-                  />
-                </span>
+                <SortDirectionIcon
+                  direction={
+                    (sortBy === 'registered'
+                      ? registeredSortDirection
+                      : sortBy === 'patientId'
+                        ? patientIdSortDirection
+                        : nameSortDirection)
+                  }
+                />
               </button>
             </div>
           </div>
